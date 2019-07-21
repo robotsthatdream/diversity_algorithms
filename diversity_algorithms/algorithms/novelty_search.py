@@ -12,20 +12,10 @@ def set_creator(cr):
 
 from deap import tools, base, algorithms
 
+from diversity_algorithms.algorithms.utils import *
+
 period_dump_pop = 10 # Population dump interval - 0 to disable
 
-# in_ipython = False
-# try:
-#     get_ipython
-#     print("We are in iPython / Jupyter")
-#     in_ipython = True
-# except NameError:
-#     print("We are NOT in iPython / Jupyter")
-#     pass
-
-
-# if(not in_ipython):
-#     from scoop import futures
 
 # ### Novelty-based Evolution Strategies
 
@@ -48,7 +38,7 @@ class NovArchive:
     def size(self):
         return len(self.all_bd)
     
-def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _lambda=6):
+def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _lambda=6, verbose=False):
    """" Implementation of novelty search following (Gomes, J., Mariano, P., & Christensen, A. L. (2015, July). Devising effective novelty search algorithms: A comprehensive empirical study. In Proceedings of GECCO 2015 (pp. 943-950). ACM.).
    - population is the set of indiv for which novelty needs to be computed
    - offspring is the set of new individuals that need to be taken into account to update the archive (may be the same as population, but it may also be different as population may contain the set of parents)
@@ -62,18 +52,21 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
    
    # Novelty scores updates
    if (archive) and (archive.size()>=k):
-       print("Update Novelty. Archive size=%d"%(archive.size()))
+       if (verbose):
+           print("Update Novelty. Archive size=%d"%(archive.size())) 
        for ind in population:
            ind.novelty=archive.get_nov(ind.fitness.bd)
    else:
-       print("Update Novelty. Initial step...")
+       if (verbose):
+           print("Update Novelty. Initial step...") 
        for ind in population:
            ind.novelty=0.
 
-   print("Fitness (novelty): ",end="")
-   for ind in population:
-       print("%.2f, "%(ind.novelty),end="")
-   print("")
+   if (verbose):
+       print("Fitness (novelty): ",end="") 
+       for ind in population:
+           print("%.2f, "%(ind.novelty),end="")
+       print("")
    if (len(offspring)<_lambda):
        print("ERROR: updateNovelty, lambda(%d)<offspring size (%d)"%(_lambda, len(offspring)))
        return None
@@ -83,15 +76,17 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
    if(add_strategy=="random"):
        l=list(range(len(offspring)))
        random.shuffle(l)
-       print("Random archive update. Adding offspring: "+str(l[:_lambda]))
+       if (verbose):
+           print("Random archive update. Adding offspring: "+str(l[:_lambda])) 
        lbd=[offspring[l[i]].fitness.bd for i in range(_lambda)]
    elif(add_strategy=="novel"):
        soff=sorted(offspring,lambda x:x.novelty)
        ilast=len(offspring)-_lambda
        lbd=[soff[i].fitness.bd for i in range(ilast,len(soff))]
-       print("Novel archive update. Adding offspring: ")
-       for offs in soff[iLast:len(soff)]:
-           print("    nov="+str(offs.novelty)+" fit="+str(offs.fitness.values)+" bd="+str(offs.fitness.bd))
+       if (verbose):
+           print("Novel archive update. Adding offspring: ")
+           for offs in soff[iLast:len(soff)]:
+               print("    nov="+str(offs.novelty)+" fit="+str(offs.fitness.values)+" bd="+str(offs.fitness.bd))
    else:
        print("ERROR: updateNovelty: unknown add strategy(%s), valid alternatives are \"random\" and \"novel\""%(add_strategy))
        return None
@@ -122,20 +117,11 @@ def dump_pop(pop, gen, run_name="runXXX"):
 def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy,lambdaNov,
                    stats=None, halloffame=None, verbose=__debug__):
 
-    d=datetime.datetime.today()
-    run_name=d.strftime("%Y_%m_%d-%H:%M:%S")
-    nb=0
-    not_created=True
-    while(not_created):
-        try:
-            os.mkdir(run_name+"_%d"%nb)
-            run_name+="_%d"%nb
-            not_created=False
-        except OSError:
-            nb+=1
-
-    print("Run name: "+run_name)
-
+    if(halloffame!=None):
+        print("WARNING: the hall of fame argument is ignored in the Novelty Search Algorithm")
+    
+    run_name=generate_exp_name("")
+        
     print("     lambda=%d, mu=%d, cxpb=%.2f, mutpb=%.2f, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,cxpb,mutpb,ngen,k,lambdaNov))
 
     logbook = tools.Logbook()
@@ -146,20 +132,12 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     # fit is a list of fitness (that is also a list) and behavior descriptor
 
-    # some sanity check
-    #fit=fitnesses[0]
-    #if (len(fit)<2) or (not isinstance(fit[0],list)):
-    #    print("Error: the evaluation should return a behavior descriptor besides the fitness")
-    #    return None
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit[0]
         ind.fitness.bd = fit[1]
 
     archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
              
-    if halloffame is not None:
-        halloffame.update(population)
-
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(invalid_ind), **record)
     if verbose:
@@ -197,24 +175,11 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         if(period_dump_pop and(gen % period_dump_pop == 0)): # Dump population
             dump_pop(pq, gen,run_name)
         
-        # Update the hall of fame with the generated individuals
-        if halloffame is not None:
-            halloffame.update(offspring)
 
-        print("Gen %d : whole pop:"%(gen),end="")
-        for ind in pq:
-            print(" %02.2f "%(ind.novelty), end="")
-        print("")
+        print("Gen %d")
 
         # Select the next generation population
-        population[:] = toolbox.select(pq, mu)
-
-        print("Gen %d : new pop:"%(gen),end="")
-        for ind in population:
-            print(" %02.2f "%(ind.novelty), end="")
-        print("")
-        
-        
+        population[:] = toolbox.select(pq, mu)        
         
         # Update the statistics with the new population
         record = stats.compile(population) if stats is not None else {}
@@ -304,11 +269,10 @@ def NovES(evaluate,myparams,pool=None):
     toolbox.decorate("mutate", checkStrategyMin(params["MIN_STRATEGY"]))
 
     pop = toolbox.population(n=params["MU"])
-    hof = tools.HallOfFame(1)
     
-    rpop, logbook, run_name = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], halloffame=hof, verbose=False)
+    rpop, logbook, run_name = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], halloffame=None, verbose=False)
         
-    return rpop, logbook, hof, run_name
+    return rpop, logbook, run_name 
   
 if (__name__=='__main__'):
     print("Test of the Novelty-based ES")
