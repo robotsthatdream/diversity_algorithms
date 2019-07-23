@@ -55,8 +55,7 @@ def get_indiv_coverage(x, min_x=None, max_x=None,nb_bin=None):
     icov=[]
     for ind in x:
         grid=build_grid(min_x,max_x,nb_bin)
-        bdx=[sind.fitness.bd for sind in ind.evolvability_samples]
-        icov.append(get_updated_coverage(grid,min_x, max_x, bdx))
+        icov.append(get_updated_coverage(grid,ind.evolvability_samples, min_x=min_x, max_x=max_x))
     # TODO: complete the stats, notably look at how each grid is different from the others
     return icov
 
@@ -64,7 +63,7 @@ def get_stat_coverage(grid, indiv=False, min_x=None, max_x=None,nb_bin=None):
     stat_coverage = tools.Statistics(key=lambda ind: ind)
     stat_coverage.register("glob_cov",get_updated_coverage,grid, min_x=min_x, max_x=max_x)
     if (indiv):
-        stat_coverage.register("indiv_cov",get_indiv_coverage,grid,min_x=min_x, max_x=max_x, nb_bin=nb_bin)
+        stat_coverage.register("indiv_cov",get_indiv_coverage,min_x=min_x, max_x=max_x, nb_bin=nb_bin)
         
     return stat_coverage
 

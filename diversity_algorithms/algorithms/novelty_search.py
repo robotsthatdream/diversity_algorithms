@@ -145,6 +145,12 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
     archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
 
+    # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
+    if (evolvability_nb_samples>0):
+        print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
+        for ind in population:
+            ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
+
     record = stats.compile(population) if stats is not None else {}
     logbook.record(gen=0, nevals=len(invalid_ind), **record)
     if verbose:
@@ -152,11 +158,6 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
     gen=0    
 
-    # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
-    if (evolvability_nb_samples>0):
-        print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
-        for ind in population:
-            ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
     
     if period_dump_bd:
         dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
