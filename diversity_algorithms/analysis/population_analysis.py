@@ -4,25 +4,63 @@
 
 import numpy as np
 import math as m
-
+from functools import *
 from deap import tools, base, algorithms
 
-def coverage(x, min_x, max_x, nb_bin):
+def build_grid(min_x, max_x, nb_bin):
+    """Build an outcome space grid.
+
+    Build an outcome space grid:
+    :param min_x: minimum values on each dimension
+    :param max_x: maximum values on each dimension
+    :param nb_bin: number of bins per dimensions. Vector of the nubmer of bins for each dimension. If scalar, we will assume the same dimension for each dimension.
+    :returns: the generated grid
+    """
     assert(len(min_x)==len(max_x)),"Problem with the size of min and max"
     dim=len(min_x)
-    grid=np.zeros(shape=[nb_bin]*dim,dtype=np.int)
+    if(hasattr(nb_bin, '__iter__')):
+        lnb_bin=nb_bin
+    else:
+        lnb_bin=[nb_bin]*dim
+    grid=np.zeros(shape=lnb_bin,dtype=np.int)
+    return grid
+
+def update_grid(grid,min_x, max_x, x):
+    """Update a grid with the given points.
+
+    Update a grid with the given points:
+    :param grid: grid to update (None if it is to be built)
+    :param min_x: minimum values on each dimension
+    :param max_x: maximum values on each dimension
+    :param x: set of points to take into account
+    """
+    assert(len(min_x)==len(max_x)),"Problem with the size of min and max"
+    dim=len(min_x)
+    nb_bin=np.shape(grid)
     for px in x:
         assert(len(px)==len(max_x)),"Problem with the size of a point:  "+str(px)+" min_x="+str(min_x)
         ix=[0]*dim
         for i in range(dim):
-            ix[i] = m.floor((px[i]-min_x[i])/(max_x[i]-min_x[i]+0.01)*nb_bin)
+            ix[i] = m.floor((px[i]-min_x[i])/(max_x[i]-min_x[i]+0.01)*nb_bin[i])
         #print("Adding a point to "+str(ix))
         grid[tuple(ix)]+=1
-    #print(str(grid))
-    nb_points=nb_bin**dim
-    return float(np.count_nonzero(grid))/float(nb_points)
+
+def coverage(grid):
+    """Return the coverage, the ratio of non zero cells on the total number of cells."""
+    nb_bin=np.shape(grid)
+    nbc=reduce(lambda x,y:x*y,nb_bin,1)
+    return float(np.count_nonzero(grid))/float(nbc)
 
 def radius(x):
+    """Return statistics about the distances between the points in x.
+
+    Return statistics about the distances between the points in x. Values returned:
+    :returns:
+       maximum distance between points in x
+       75 percentile of the distances
+       average value of the distances
+       median value of the distances
+    """
     max_d=0
     d=[]
     for i1 in range(len(x)):
@@ -33,8 +71,18 @@ def radius(x):
             d.append(dist)
     return max(d),np.percentile(d,75),np.average(d),np.median(d)
 
-# Generating a set of individuals from a current population
-def sampleFromPop(population, toolbox, lambda_, cxpb, mutpb, verbose=__debug__):
+def sample_from_pop(population, toolbox, lambda_, cxpb, mutpb):
+    """Generate a set of individuals from a population.
+
+    Generate a set of individuals from a population. Parameters:
+    :param population: the population to start from
+    :param toolbox: the DEAP framework toolbox that contains the variation operators and the evaluation function
+    :param lambda_: number of individuals to generate
+    :param cxpb: cross-over probability (set to 0 to test only mutation)
+    :param mutbp: mutation probability
+
+    WARNING: if cxpb>0, the population size needs to be >2 (it thus won't work to sample individuals from a single individual)
+    """
     # Vary the population
     offspring = algorithms.varOr(population, toolbox, lambda_, cxpb, mutpb)
     
@@ -48,12 +96,19 @@ def sampleFromPop(population, toolbox, lambda_, cxpb, mutpb, verbose=__debug__):
     return offspring
 
 
+def density(grid):
+    """Return the density of the population.
+
+    Return the density of the population.
+    """
+    print("TODO...")
+    pass
+
+def evolvability_specialization(population):
+    print("TODO...")
+    pass
+    
+
 if __name__ == '__main__':
     # Some tests
-    x=[np.array([0,0]),np.array([1,2]),np.array([3,4]),np.array([5,5])]
-    min_x=[0,0]
-    max_x=[5,5]
-    nb_bin=5
-    cov=coverage(x,min_x,max_x,nb_bin)
-    print("Coverage: "+str(cov))
-    print("Radius: "+str(radius(x)))
+    pass

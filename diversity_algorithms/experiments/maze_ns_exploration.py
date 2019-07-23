@@ -6,9 +6,12 @@ import sys,getopt
 import numpy as np
 
 from diversity_algorithms.environments.maze_fastsim import *
+from diversity_algorithms.analysis.population_analysis import *
+from diversity_algorithms.algorithms.stats import *
 
 from deap import creator, base
 
+import pickle
 
 # =====
 # Yes, this is ugly. This is DEAP's fault.
@@ -48,47 +51,43 @@ def eval_with_functor(g):
 	return eval_dist_maze(g)
 
 
-def launch_nov(pop_size, nb_gen):
+def launch_nov(pop_size, nb_gen, evolvability_nb_samples):
+
+        
+	if (evolvability_nb_samples>0):
+                min_x=[0,0]
+                max_x=[600,600]
+                nb_bin=20
+                grid=build_grid(min_x, max_x, nb_bin)
+                stats=get_stat_coverage(grid,indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
+                # SD comment: indiv=True does not work for the moment, working on it...
+	else:
+                stats=None
 	params={"IND_SIZE":controller.n_weights, 
-		"CXPB":0.5,
+		"CXPB":0,
 		"MUTPB":0.5,
 		"NGEN":nb_gen,
-		"STATS":None,
+		"STATS":stats,
 		"MIN": -10,
 		"MAX": 10,
 		"MU": pop_size,
 		"LAMBDA": pop_size*2,
 		"K":15,
 		"ADD_STRATEGY":"random",
-		"LAMBDANOV":6
+		"LAMBDANOV":6,
+                "EVOLVABILITY_NB_SAMPLES": evolvability_nb_samples
 	}
 	
-	#try:
-	#	del creator.FitnessMin
-	#except AttributeError:
-	#	pass
-	#
-	#try:
-	#	del creator.Individual
-	#except AttributeError:
-	#	pass
-	
-	#try:
-	#	del creator.Strategy
-	#except AttributeError:
-	#	pass
-	
-	#creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-	#creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
-	#creator.create("Strategy", list, typecode="d")
-	
+	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
+	if (evolvability_nb_samples>0):
+                print("WARNING, evolvability_nb_samples>0. The run will last much longer...")
 
 	if with_scoop:
 		pool=futures
 
-	pop, logbook, hof, run_name = NovES(eval_with_functor, params, pool)
+	pop, logbook, run_name = NovES(eval_with_functor, params, pool)
 
-	return pop, logbook, hof, run_name
+	return pop, logbook, run_name
 
 # THIS IS IMPORTANT or the code will be executed in all workers
 if(__name__=='__main__'):
@@ -96,9 +95,10 @@ if(__name__=='__main__'):
 
 	pop_size=100
 	nb_gen=1000
+	evolvability_nb_samples=0
         
 	try:
-                opts, args = getopt.getopt(sys.argv[1:],"hp:g:",["pop_size=","nb_gen="])
+                opts, args = getopt.getopt(sys.argv[1:],"hp:g:e:",["pop_size=","nb_gen=", "evolvability_nb_samples="])
 	except getopt.GetoptError:
                 print(sys.argv[0]+" -p <population size> -g <number of generations>")
                 sys.exit(2)
@@ -110,12 +110,21 @@ if(__name__=='__main__'):
                                   pop_size = int(arg)
 		elif opt in ("-g", "--nb_gen"):
                                   nb_gen = int(arg)
+		elif opt in ("-e", "--evolvability_nb_samples"):
+                                  evolvability_nb_samples = int(arg)
 
-	pop, logbook, hof, run_name = launch_nov(pop_size, nb_gen)                                  
+	pop, logbook, run_name = launch_nov(pop_size, nb_gen, evolvability_nb_samples)
+
+
+	exp_res={}
+	exp_res["pop"]=pop
+	exp_res["logbook"]=logbook
+	exp_res["run_name"]=run_name
+
+	f=open(run_name+"_results","wb")
+	pickle.dump(exp_res,f)
+	f.close()
 	
-	print("Result of the mu+lambda ES on the maze with distance to obj. function: best="+str(hof[0]))
-
-	#params["VARIANT"]=","
-	#pop, logbook, hof = ES(eval_dist_maze,params)
-	#print("Result of the mu,lambda ES on the maze with distance to obj. function: best="+str(hof[0])+", fitness="+str(benchmarks.sphere(hof[0])[0]))
+	print("The final population, logbook and run_name have been dumped by pickle in: "+run_name+"_results")
+        
 
