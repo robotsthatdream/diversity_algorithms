@@ -1,7 +1,7 @@
 from deap import tools
 import numpy
 
-from diversity_algorithms.analysis.population_analysis import *
+from diversity_algorithms.analysis import build_grid, update_grid, coverage
 
 # useful classes
 class Perc:

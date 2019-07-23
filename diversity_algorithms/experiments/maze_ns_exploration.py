@@ -5,8 +5,9 @@
 import sys,getopt
 import numpy as np
 
-from diversity_algorithms.environments.maze_fastsim import *
-from diversity_algorithms.analysis.population_analysis import *
+from diversity_algorithms.environments import EvaluationFunctor
+from diversity_algorithms.controllers import SimpleNeuralController
+from diversity_algorithms.analysis import build_grid
 from diversity_algorithms.algorithms.stats import *
 
 from deap import creator, base
@@ -42,8 +43,8 @@ if with_scoop:
 
 # Each worker gets a functor
 nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
-env, controller = generate_gym_env_and_controller(params=nnparams)
-eval_dist_maze = EvaluationFunctor(env, controller,with_behavior_descriptor=True)
+#env, controller = generate_gym_env_and_controller(params=nnparams)
+eval_dist_maze = EvaluationFunctor(controller_type=SimpleNeuralController,controller_params=nnparams,with_behavior_descriptor=True)
 
 # DO NOT pass the functor directly to futures.map -- this creates memory leaks
 # Wrapper that evals with the local functor
@@ -63,7 +64,7 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples):
                 # SD comment: indiv=True does not work for the moment, working on it...
 	else:
                 stats=None
-	params={"IND_SIZE":controller.n_weights, 
+	params={"IND_SIZE":eval_dist_maze.controller.n_weights, 
 		"CXPB":0,
 		"MUTPB":0.5,
 		"NGEN":nb_gen,

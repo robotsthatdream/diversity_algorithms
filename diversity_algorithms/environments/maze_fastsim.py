@@ -8,40 +8,35 @@ import numpy as np
 import time
 #import resource
 
-from diversity_algorithms.controllers.fixed_structure_nn import SimpleNeuralController
+from diversity_algorithms.controllers import SimpleNeuralController
 
 # Fitness/evaluation function
 
 default_max_step = 2000 # same as C++ sferes experiments
 
-def generate_gym_env_and_controller(controller_type=SimpleNeuralController, params=None):
-	"""
-	Generate a gym environmenent and a controller.
-	"""
-	print("Generate gym env + controller")
-	env = gym.make('FastsimSimpleNavigation-v0')
-	env.reset()
-	controller = controller_type(env.observation_space.shape[0],env.action_space.shape[0], params=params)
-	return env, controller
-
-
-current_serial=1
-do_dump=False
-
-
 
 class EvaluationFunctor:
-	def __init__(self, env, controller, output='dist_to_goal',max_step=default_max_step, with_behavior_descriptor=False,dump=do_dump):
+	def __init__(self, env=None, controller=None, controller_type=None, controller_params=None, output='dist_to_goal',max_step=default_max_step, with_behavior_descriptor=False):
 		global current_serial
 		print("Eval functor created")
-		self.env = env
-		self.controller = controller
+		#Env
+		if(env is None):
+			self.env = gym.make('FastsimSimpleNavigation-v0')
+			self.env.reset()
+		else:
+			self.env = env
+		#Controller
+		if(controller is None): # Build controller
+			if(controller_type is None):
+				raise RuntimeError("Please either give a controller or specify controller type")
+			self.controller = controller_type(self.env.observation_space.shape[0],self.env.action_space.shape[0], params=controller_params)
+		else:
+			if(controller_type is not None or controller_params is not None):
+				print("WARNING: EvaluationFunctor built with both controller and controller_type/controller_params. controller_type/controller_params arguments  will be ignored")
+			self.controller = controller
 		self.out = output
 		self.max_step = max_step
 		self.with_behavior_descriptor = with_behavior_descriptor
-		self.serial = current_serial
-		current_serial += 1
-		self.dump = dump
 		self.evals = 0
 	
 	#def evaluate_maze(self, )
@@ -66,11 +61,6 @@ class EvaluationFunctor:
 		action_scale_factor = self.env.action_space.high # The nn generate an output in ]-1;1[ (tanh out layer); this scales to action space range
 		obs = initial_obs
 		total_reward = 0.
-		# Dumping setup
-		if (self.dump): #(nb_ind%10==0):
-			dump_traj=open("traj_%06d.log"%(self.serial),"w")
-		else:
-			dump_traj=None
 		# Main loop
 		then = time.time()
 		for i in range(self.max_step):
@@ -79,16 +69,9 @@ class EvaluationFunctor:
 			obs, reward, end, info = self.env.step(action) # take a random action
 			total_reward += reward
 			#print("Step %d : Obs=%s Action=%s Reward=%f  Dist. to objective=%f  Robot position=%s  End of ep=%s" % (i, str(obs), str(action), reward, info["dist_obj"], str(in	fo["robot_pos"]), str(end)))
-			if(dump_traj):
-				dump_traj.write(" ".join(map(str,info["robot_pos"]))+"\n")
 			if end:
 				break
 		now = time.time()
-		#print("Main eval loop exit; took %f" % (now - then))
-		if(dump_traj):
-			dump_traj.write("# dist: %f total_reward: %f\n"%(info['dist_obj'],total_reward))
-			dump_traj.close()
-		#print("Eval ran for %d timesteps; final distance %f pos %s" % (i+1, info['dist_obj'], str(info['robot_pos'])))
 		return reward, end, total_reward, info
 
 	
