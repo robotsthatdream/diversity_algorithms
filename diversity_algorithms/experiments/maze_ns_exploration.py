@@ -8,7 +8,7 @@ import numpy as np
 from diversity_algorithms.environments import EvaluationFunctor
 from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
-from diversity_algorithms.algorithms.stats import *
+from diversity_algorithms.algorithms.stats import * 
 
 from deap import creator, base
 
@@ -26,7 +26,7 @@ creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
 creator.create("Strategy", list, typecode="d")
 
-from diversity_algorithms.algorithms.novelty_search import NovES
+from diversity_algorithms.algorithms import NovES
 # =====
 
 #creator.create("FitnessMax", base.Fitness, weights=(1.0,))
