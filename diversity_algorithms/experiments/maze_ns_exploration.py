@@ -71,8 +71,8 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples):
 		"ETA_M": 15.0, # Eta parameter for polynomial mutation
 		"NGEN":nb_gen, # Number of generations
 		"STATS":stats, # Statistics
-		"MIN": -10, # Seems reasonable for NN weights
-		"MAX": 10, # Seems reasonable for NN weights
+		"MIN": -5, # Seems reasonable for NN weights
+		"MAX": 5, # Seems reasonable for NN weights
 		"MU": pop_size,
 		"LAMBDA": pop_size*2,
 		"K":15,
