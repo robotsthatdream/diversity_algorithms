@@ -24,7 +24,7 @@ set_creator(creator)
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
-creator.create("Strategy", list, typecode="d")
+#creator.create("Strategy", list, typecode="d")
 
 from diversity_algorithms.algorithms import NovES
 # =====
@@ -65,18 +65,20 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples):
 	else:
                 stats=None
 	params={"IND_SIZE":eval_dist_maze.controller.n_weights, 
-		"CXPB":0,
-		"MUTPB":0.5,
-		"NGEN":nb_gen,
-		"STATS":stats,
-		"MIN": -10,
-		"MAX": 10,
+		"CXPB":0, # No crossover
+		"MUTPB":1., # All offspring are mutated...
+		"INDPB":0.1, # ...but only 10% of parameters are mutated
+		"ETA_M": 15.0, # Eta parameter for polynomial mutation
+		"NGEN":nb_gen, # Number of generations
+		"STATS":stats, # Statistics
+		"MIN": -10, # Seems reasonable for NN weights
+		"MAX": 10, # Seems reasonable for NN weights
 		"MU": pop_size,
 		"LAMBDA": pop_size*2,
 		"K":15,
 		"ADD_STRATEGY":"random",
 		"LAMBDANOV":6,
-                "EVOLVABILITY_NB_SAMPLES": evolvability_nb_samples
+		"EVOLVABILITY_NB_SAMPLES": evolvability_nb_samples
 	}
 	
 	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))

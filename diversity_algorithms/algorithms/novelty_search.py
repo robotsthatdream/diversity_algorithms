@@ -5,6 +5,8 @@ from scipy.spatial import KDTree
 import numpy as np
 import datetime
 import os
+import array
+
 
 creator = None
 def set_creator(cr):
@@ -215,10 +217,10 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     return population, logbook, run_name
 
  # Individual generator
-def generateES(icls, scls, size, imin, imax, smin, smax):
-    ind = icls(random.uniform(imin, imax) for _ in range(size))
-    ind.strategy = scls(random.uniform(smin, smax) for _ in range(size))
-    return ind
+#def generateES(icls, scls, size, imin, imax, smin, smax):
+#    ind = icls(random.uniform(imin, imax) for _ in range(size))
+#    ind.strategy = scls(random.uniform(smin, smax) for _ in range(size))
+#    return ind
 
 def checkStrategyMin(minstrategy):
     def decorator(func):
@@ -252,23 +254,21 @@ def NovES(evaluate,myparams,pool=None):
     """Novelty-based Mu plus lambda ES."""
 
     params={"IND_SIZE":1, 
-            "CXPB":0,
-            "MUTPB":0.5,
-            "NGEN":1000,
-            "STATS":None,
-            "MIN": 0,
-            "MAX": 1,
-            "MIN_STRATEGY": 0,
-            "MAX_STRATEGY": 1,
-            "MU": 20,
-            "LAMBDA": 100,
-            "ALPHA": 0.1,
-            "C": 1.0,
-            "INDPB": 0.03,
-            "K":15,
-            "ADD_STRATEGY":"random",
-            "LAMBDANOV":6,
-            "EVOLVABILITY_NB_SAMPLES":0
+            "CXPB":0, # crossover probility
+            "MUTPB":0.5, # probability to mutate an individual
+            "NGEN":1000, # number of generations
+            "STATS":None, # Statistics
+            "MIN": 0, # Min of genotype values
+            "MAX": 1, # Max of genotype values
+            "MU": 20, # Number of individuals selected at each generation
+            "LAMBDA": 100, # Number of offspring generated at each generation
+            "ALPHA": 0.1, # Alpha parameter of Blend crossover
+            "ETA_M": 15.0, # Eta parameter for polynomial mutation
+            "INDPB": 0.1, # probability to mutate a specific genotype parameter given that the individual is mutated. (The unconditional probability of a parameter being mutated is INDPB*MUTPB
+            "K":15, # Number of neighbors to consider in the archive for novelty computation
+            "ADD_STRATEGY":"random", # Selection strategy to add individuals to the archive
+            "LAMBDANOV":6, # How many individuals to add to the archive at each gen
+            "EVOLVABILITY_NB_SAMPLES":0 # How many children to generate to estimate evolvability
            }
     
     
@@ -277,11 +277,15 @@ def NovES(evaluate,myparams,pool=None):
 
          
     toolbox = base.Toolbox()
-    toolbox.register("individual", generateES, creator.Individual, creator.Strategy,
-        params["IND_SIZE"], params["MIN"], params["MAX"], params["MIN_STRATEGY"], params["MAX_STRATEGY"])
+    toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
+    
+    toolbox.register("individual", tools.initRepeat, creator.Individual,
+                 toolbox.attr_float, n=params["IND_SIZE"])
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    toolbox.register("mate", tools.cxESBlend, alpha=params["ALPHA"])
-    toolbox.register("mutate", tools.mutESLogNormal, c=params["C"], indpb=params["INDPB"])
+    toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
+
+    # Polynomial mutation with eta=15, and p=0.1 as for Leni
+    toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["ETA_M"], indpb=params["INDPB"], low=params["MIN"], up=params["MAX"])
     toolbox.register("select", tools.selBest, fit_attr='novelty')
     toolbox.register("evaluate", evaluate)
 
@@ -291,8 +295,8 @@ def NovES(evaluate,myparams,pool=None):
     
 #    toolbox.decorate("mate", checkStrategy(params["MIN_STRATEGY"], params["MAX_STRATEGY"]))
 #    toolbox.decorate("mutate", checkStrategy(params["MIN_STRATEGY"], params["MAX_STRATEGY"]))
-    toolbox.decorate("mate", checkStrategyMin(params["MIN_STRATEGY"]))
-    toolbox.decorate("mutate", checkStrategyMin(params["MIN_STRATEGY"]))
+#    toolbox.decorate("mate", checkStrategyMin(params["MIN_STRATEGY"]))
+#    toolbox.decorate("mutate", checkStrategyMin(params["MIN_STRATEGY"]))
 
     pop = toolbox.population(n=params["MU"])
     
