@@ -1,6 +1,8 @@
 import numpy as np
 import datetime
 import os
+import dill
+import pickle
 
 def generate_exp_name(name=""):
     d=datetime.datetime.today()
@@ -29,3 +31,33 @@ def dump_pop(pop, gen, run_name="runXXX"):
     except OSError:
         pass
     np.savez(run_name+"/pop_gen%d.npz" % gen, **out_dict) 
+
+def dump_archive(archive, gen, run_name="runXXX"):
+    out_dict = {"gen": gen, "size": archive.size()}
+    for (i,ind) in enumerate(archive.all_bd):
+        out_dict["bd_%d" % i] = np.array(ind)
+    try:
+        os.mkdir(run_name)
+    except OSError:
+        pass
+    np.savez(run_name+"/archive_gen%d.npz" % gen, **out_dict) 
+
+def dump_params(params, run_name="runXXX"):
+    try:
+        os.mkdir(run_name)
+    except OSError:
+        pass
+    stat=params["STATS"]
+    params["STATS"]=None # pickle can't save some parts of the stat
+    np.savez(run_name+"/params.npz", **params) 
+    params["STATS"]=stat
+
+def dump_logbook(logbook,gen,run_name="runXXX"):
+    out_dict = {}
+    for k in logbook.header:
+        out_dict[k]=logbook.select(k)
+    try:
+        os.mkdir(run_name)
+    except OSError:
+        pass
+    np.savez(run_name+"/logbook_gen%d.npz" % gen, **out_dict) 

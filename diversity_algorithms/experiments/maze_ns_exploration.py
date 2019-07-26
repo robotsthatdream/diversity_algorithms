@@ -11,6 +11,7 @@ from diversity_algorithms.algorithms.stats import *
 
 from deap import creator, base
 
+import dill
 import pickle
 
 # =====
@@ -26,6 +27,8 @@ creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, str
 creator.create("Strategy", list, typecode="d")
 
 from diversity_algorithms.algorithms.novelty_search import NovES
+from diversity_algorithms.algorithms.utils import *
+
 # =====
 
 #creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -98,9 +101,13 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
 	if with_scoop:
 		pool=futures
 
-	pop, logbook, run_name = NovES(eval_with_functor, params, pool)
-
-	return pop, logbook, run_name, params
+	dump_params(params,run_name)
+	pop, logbook = NovES(eval_with_functor, params, pool, run_name)
+	dump_pop(pop,nb_gen,run_name)
+	dump_logbook(logbook,nb_gen,run_name)
+	dump_archive(archive,nb_gen,run_name)
+        
+	return pop, logbook
 
 # THIS IS IMPORTANT or the code will be executed in all workers
 if(__name__=='__main__'):
@@ -110,6 +117,9 @@ if(__name__=='__main__'):
 	nb_gen=1000
 	evolvability_nb_samples=0
 	evolvability_period=-1
+
+	run_name=generate_exp_name("")
+
         
 	try:
                 opts, args = getopt.getopt(sys.argv[1:],"hp:g:e:P:",["pop_size=","nb_gen=", "evolvability_nb_samples=","evolvability_period="])
@@ -129,20 +139,8 @@ if(__name__=='__main__'):
 		elif opt in ("-P", "--evolvability_period"):
                                   evolvability_period = int(arg)
 
-	pop, logbook, run_name, params = launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period)
+	pop, logbook = launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period)
 
-
-	exp_res={}
-	exp_res["pop"]=pop
-	exp_res["logbook"]=logbook
-	exp_res["run_name"]=run_name
-
-	params["STATS"]=None
-	exp_res["params"]=params
-
-	f=open(run_name+"_results","wb")
-	pickle.dump(exp_res,f)
-	f.close()
 	
 	print("The final population, logbook and run_name have been dumped by pickle in: "+run_name+"_results")
         

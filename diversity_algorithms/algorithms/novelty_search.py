@@ -103,7 +103,7 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
 
 ## DEAP compatible algorithm
 def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy,lambdaNov,
-                          stats=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__):
+                          stats=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX"):
     """Novelty Search algorithm
  
     Novelty Search algorithm. Parameters:
@@ -128,7 +128,6 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     if(halloffame!=None):
         print("WARNING: the hall of fame argument is ignored in the Novelty Search Algorithm")
     
-    run_name=generate_exp_name("")
         
     print("     lambda=%d, mu=%d, cxpb=%.2f, mutpb=%.2f, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,cxpb,mutpb,ngen,k,lambdaNov))
 
@@ -199,6 +198,8 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
         if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump population
             dump_pop(pq, gen,run_name)
+            dump_archive(archive, gen,run_name)
+            dump_logbook(logbook, gen,run_name)
 
         print("Gen %d"%(gen))
 
@@ -260,7 +261,7 @@ def checkStrategyMinMax(minstrategy,maxstrategy):
 
 
 
-def NovES(evaluate,myparams,pool=None):
+def NovES(evaluate,myparams,pool=None, run_name="runXXX"):
     """Novelty-based Mu plus lambda ES."""
 
     params={"IND_SIZE":1, 
@@ -311,9 +312,9 @@ def NovES(evaluate,myparams,pool=None):
 
     pop = toolbox.population(n=params["MU"])
     
-    rpop, logbook, run_name = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False)
+    rpop, logbook, run_name = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name)
         
-    return rpop, logbook, run_name 
+    return rpop, logbook
   
 if (__name__=='__main__'):
     print("Test of the Novelty-based ES")
