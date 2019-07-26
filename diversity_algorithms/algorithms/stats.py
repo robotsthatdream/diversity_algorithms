@@ -132,7 +132,7 @@ def get_stat_coverage(grid, indiv=False, min_x=None, max_x=None,nb_bin=None, gen
     """
     stat_coverage = tools.Statistics(key=lambda ind: ind)
     lbd_global=[]
-    stat_coverage.register("glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window_global=10)
+    stat_coverage.register("glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window=10)
     if (indiv):
         stat_coverage.register("indiv_cov",get_indiv_coverage,min_x=min_x, max_x=max_x, nb_bin=nb_bin)
         

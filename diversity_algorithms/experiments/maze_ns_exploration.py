@@ -69,8 +69,7 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
 		max_x=[600,600]
 		nb_bin=20
 		grid=build_grid(min_x, max_x, nb_bin)
-		lbd=[]
-		stats=get_stat_coverage(grid,lbd,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
+		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
 	else:
 		stats=None
 
