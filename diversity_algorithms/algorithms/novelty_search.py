@@ -103,9 +103,9 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
 
 ## DEAP compatible algorithm
 def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy,lambdaNov,
-                          stats=None, halloffame=None, period_dump_bd=1, period_dump_pop=10, evolvability_nb_samples=0, verbose=__debug__):
+                          stats=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__):
     """Novelty Search algorithm
-
+ 
     Novelty Search algorithm. Parameters:
     :param population: the population to start from
     :param toolbox: the DEAP toolbox to use to generate new individuals and evaluate them
@@ -119,8 +119,9 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     :param lambdaNov: the number of individuals to add to the archive at a given generation
     :param stats: the statistic to use
     :param halloffame: the halloffame
-    :param period_dump_bd: the period for dumping behavior descriptors
-    :param period_dump_pop: the period for dumping the current population
+    :param dump_period_bd: the period for dumping behavior descriptors
+    :param dump_period_pop: the period for dumping the current population
+    :param evolvability_period: period of the evolvability computation
     :param evolvability_nb_samples: the number of samples to generate from each individual in the population to estimate their evolvability (WARNING: it will significantly slow down a run and it is used only for statistical reasons
     """
         
@@ -149,6 +150,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     if (evolvability_nb_samples>0):
         print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
         for ind in population:
+            print("."),
             ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
 
     record = stats.compile(population) if stats is not None else {}
@@ -159,13 +161,13 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     gen=0    
 
     
-    if period_dump_bd:
+    if dump_period_bd:
         dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
         for ind in population:
             dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
         dump_bd.close()
     
-    if period_dump_pop:
+    if dump_period_pop:
         dump_pop(population, 0, run_name) # Dump initial pop
     
     # Begin the generational process
@@ -181,17 +183,18 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
             ind.fitness.bd = fit[1]
 
         pq=population+offspring
+
+        
         archive=updateNovelty(pq,offspring,archive,k,add_strategy,lambdaNov)
 
-        if(period_dump_bd and(gen % period_dump_bd == 0)): # Dump behavior descriptors
+        if(dump_period_bd and(gen % dump_period_bd == 0)): # Dump behavior descriptors
             dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
             for ind in offspring:
                 dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
             dump_bd.close()
 
-        if(period_dump_pop and(gen % period_dump_pop == 0)): # Dump population
+        if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump population
             dump_pop(pq, gen,run_name)
-        
 
         print("Gen %d"%(gen))
 
@@ -200,10 +203,9 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         population[:] = toolbox.select(pq, mu)        
 
         # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
-        if (evolvability_nb_samples>0):
+        if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period == 0):
             for ind in population:
                 ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
-
 
         
         # Update the statistics with the new population
@@ -268,7 +270,10 @@ def NovES(evaluate,myparams,pool=None):
             "K":15,
             "ADD_STRATEGY":"random",
             "LAMBDANOV":6,
-            "EVOLVABILITY_NB_SAMPLES":0
+            "EVOLVABILITY_NB_SAMPLES":0,
+            "EVOLVABILITY_PERIOD": 100,
+            "DUMP_PERIOD_POP": 10,
+            "DUMP_PERIOD_BD": 1,
            }
     
     
@@ -296,7 +301,7 @@ def NovES(evaluate,myparams,pool=None):
 
     pop = toolbox.population(n=params["MU"])
     
-    rpop, logbook, run_name = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], verbose=False)
+    rpop, logbook, run_name = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False)
         
     return rpop, logbook, run_name 
   

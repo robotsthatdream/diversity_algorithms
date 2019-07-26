@@ -3,6 +3,7 @@
 # This set of functions tries to characterize set of individuals
 
 import numpy as np
+import numpy.ma as ma
 import math as m
 from functools import *
 from deap import tools, base, algorithms
@@ -51,6 +52,12 @@ def coverage(grid):
     nbc=reduce(lambda x,y:x*y,nb_bin,1)
     return float(np.count_nonzero(grid))/float(nbc)
 
+def jensen_shannon_distance(grid1,grid2):
+    grid3=grid1+grid2
+    grid4=grid1*np.log(2*grid1/grid3)+grid2*np.log(2*grid2/grid3)
+    grid5=ma.masked_invalid(grid4)
+    return grid5.sum()
+    
 def radius(x):
     """Return statistics about the distances between the points in x.
 
@@ -104,10 +111,6 @@ def density(grid):
     print("TODO...")
     pass
 
-def evolvability_specialization(population):
-    print("TODO...")
-    pass
-    
 
 if __name__ == '__main__':
     # Some tests
