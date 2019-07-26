@@ -159,6 +159,9 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     if verbose:
         print(logbook.stream)
 
+    for ind in population:
+        ind.evolvability_samples=None
+        
     gen=0    
 
     
@@ -217,6 +220,10 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         if verbose:
             print(logbook.stream)
 
+        for ind in population:
+            ind.evolvability_samples=None
+
+            
     return population, logbook, run_name
 
  # Individual generator
