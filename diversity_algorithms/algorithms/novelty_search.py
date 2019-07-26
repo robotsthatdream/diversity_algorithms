@@ -149,9 +149,9 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
     if (evolvability_nb_samples>0):
         print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
-        print("sampling for evolvability: ",end='')
+        print("sampling for evolvability: ",end='', flush=True)
         for ind in population:
-            print(".", end='')
+            print(".", end='', flush=True)
             ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
         print("")
     record = stats.compile(population) if stats is not None else {}
@@ -205,9 +205,9 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
         # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
         if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period == 0):
-            print("sampling for evolvability: ",end="")
+            print("sampling for evolvability: ",end="", flush=True)
             for ind in population:
-                print(".", end='')
+                print(".", end='', flush=True)
                 ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
             print("")
         
