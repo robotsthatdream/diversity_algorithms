@@ -51,27 +51,28 @@ def eval_with_functor(g):
 	return eval_dist_maze(g)
 
 
-def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=100):
-        """Launch a novelty search run on the maze
+def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=100, dump_period_pop=10, dump_period_bd=1):
+	"""Launch a novelty search run on the maze
         
-        Launch a novelty search run on the maze:
-        :param pop_size: population size
-        :param nb_gen: number of generations to compute
-        :param evolvability_nb_samples: number of samples to estimate the evolvability of each individual in the population
-        :param evolvability_period: period of the evolvability estimation
+	Launch a novelty search run on the maze:
+	:param pop_size: population size
+	:param nb_gen: number of generations to compute
+	:param evolvability_nb_samples: number of samples to estimate the evolvability of each individual in the population
+	:param evolvability_period: period of the evolvability estimation
+	:param dump_period_pop: period of populatin dump
+	:param dump_period_bd: period of behavior descriptors dump        
 
-        WARNING: the evolvability requires to generate and evaluate pop_size*evolvability_nb_samples just for statistics purposes, it will significantly slow down the process.
+	WARNING: the evolvability requires to generate and evaluate pop_size*evolvability_nb_samples just for statistics purposes, it will significantly slow down the process.
         """
-        
 	if (evolvability_nb_samples>0):
-                min_x=[0,0]
-                max_x=[600,600]
-                nb_bin=20
-                grid=build_grid(min_x, max_x, nb_bin)
-                lbd=[]
-                stats=get_stat_coverage(grid,lbd,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
+		min_x=[0,0]
+		max_x=[600,600]
+		nb_bin=20
+		grid=build_grid(min_x, max_x, nb_bin)
+		lbd=[]
+		stats=get_stat_coverage(grid,lbd,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
 	else:
-                stats=None
+		stats=None
 
 	params={"IND_SIZE":controller.n_weights, 
 		"CXPB":0,
@@ -87,7 +88,8 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
 		"LAMBDANOV":6,
                 "EVOLVABILITY_NB_SAMPLES": evolvability_nb_samples,
                 "EVOLVABILITY_PERIOD":evolvability_period,
-                "DUMP_PERIOD_POP": dump_period_pop
+                "DUMP_PERIOD_POP": dump_period_pop,
+                "DUMP_PERIOD_BD": dump_period_bd
 	}
 	
 	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
@@ -108,7 +110,7 @@ if(__name__=='__main__'):
 	pop_size=100
 	nb_gen=1000
 	evolvability_nb_samples=0
-        evolvability_period=-1
+	evolvability_period=-1
         
 	try:
                 opts, args = getopt.getopt(sys.argv[1:],"hp:g:e:P:",["pop_size=","nb_gen=", "evolvability_nb_samples=","evolvability_period="])
