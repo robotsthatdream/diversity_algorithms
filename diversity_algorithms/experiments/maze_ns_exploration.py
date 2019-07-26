@@ -64,11 +64,11 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
 
 	WARNING: the evolvability requires to generate and evaluate pop_size*evolvability_nb_samples just for statistics purposes, it will significantly slow down the process.
         """
+	min_x=[0,0]
+	max_x=[600,600]
+	nb_bin=20
+	grid=build_grid(min_x, max_x, nb_bin)
 	if (evolvability_nb_samples>0):
-		min_x=[0,0]
-		max_x=[600,600]
-		nb_bin=20
-		grid=build_grid(min_x, max_x, nb_bin)
 		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
 	else:
 		stats=get_stat_coverage(grid,indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin)

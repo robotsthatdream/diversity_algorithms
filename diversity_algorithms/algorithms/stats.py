@@ -1,6 +1,6 @@
 from deap import tools
 import numpy
-
+import sys
 from diversity_algorithms.analysis.population_analysis import *
 
 # useful classes
@@ -102,19 +102,18 @@ def get_indiv_coverage(x, min_x=None, max_x=None,nb_bin=None):
     # computing the grid of offpsring and the corresponding coverage
     for ind in x:
         grid=build_grid(min_x,max_x,nb_bin)
-        icov.append(get_updated_coverage(grid,[], ind.evolvability_samples, min_x=min_x, max_x=max_x, gen_window=0))
+        lbd=[]
+        icov.append(get_updated_coverage(grid,lbd, ind.evolvability_samples, min_x=min_x, max_x=max_x, gen_window=0))
         ind.evolvability_grid=grid
     # Computing the specialization
     for ind1 in x:
-        grid=ind1.evolvability_grid
+        grid=np.array(ind1.evolvability_grid)
         for ind2 in x:
             if (ind1 == ind2):
                 continue
             grid=grid*ind2.evolvability_grid
         specialization.append(np.count_nonzero(ind1.evolvability_grid)-np.count_nonzero(grid))
 
-    for ind in x:
-        ind.evolvability_grid=None
     return icov,specialization
 
 
