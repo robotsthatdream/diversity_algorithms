@@ -96,7 +96,7 @@ def get_indiv_coverage(x, min_x=None, max_x=None,nb_bin=None):
     icov=[]
     specialization=[]
 
-    if (not hasattr(x[0],'evolvability_grid')):
+    if (not hasattr(x[0],'evolvability_samples')) or (x[0].evolvability_samples==None):
         return None, None
     
     # computing the grid of offpsring and the corresponding coverage

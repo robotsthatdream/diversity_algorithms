@@ -69,7 +69,7 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
         """
 	min_x=[0,0]
 	max_x=[600,600]
-	nb_bin=20
+	nb_bin=10
 	grid=build_grid(min_x, max_x, nb_bin)
 	if (evolvability_nb_samples>0):
 		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
@@ -102,7 +102,7 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
 		pool=futures
 
 	dump_params(params,run_name)
-	pop, logbook = NovES(eval_with_functor, params, pool, run_name)
+	pop, archive, logbook = NovES(eval_with_functor, params, pool, run_name)
 	dump_pop(pop,nb_gen,run_name)
 	dump_logbook(logbook,nb_gen,run_name)
 	dump_archive(archive,nb_gen,run_name)
@@ -142,6 +142,6 @@ if(__name__=='__main__'):
 	pop, logbook = launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period)
 
 	
-	print("The final population, logbook and run_name have been dumped by pickle in: "+run_name+"_results")
+	print("The population, log, archives, etc have been dumped in: "+run_name)
         
 
