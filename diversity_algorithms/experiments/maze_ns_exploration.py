@@ -5,9 +5,10 @@
 import sys,getopt
 import numpy as np
 
-from diversity_algorithms.environments.maze_fastsim import *
-from diversity_algorithms.analysis.population_analysis import *
-from diversity_algorithms.algorithms.stats import *
+from diversity_algorithms.environments import EvaluationFunctor
+from diversity_algorithms.controllers import SimpleNeuralController
+from diversity_algorithms.analysis import build_grid
+from diversity_algorithms.algorithms.stats import * 
 
 from deap import creator, base
 
@@ -24,11 +25,10 @@ set_creator(creator)
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
-creator.create("Strategy", list, typecode="d")
+#creator.create("Strategy", list, typecode="d")
 
 from diversity_algorithms.algorithms.novelty_search import NovES
 from diversity_algorithms.algorithms.utils import *
-
 # =====
 
 #creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -45,8 +45,8 @@ if with_scoop:
 
 # Each worker gets a functor
 nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
-env, controller = generate_gym_env_and_controller(params=nnparams)
-eval_dist_maze = EvaluationFunctor(env, controller,with_behavior_descriptor=True)
+#env, controller = generate_gym_env_and_controller(params=nnparams)
+eval_dist_maze = EvaluationFunctor(controller_type=SimpleNeuralController,controller_params=nnparams,with_behavior_descriptor=True)
 
 # DO NOT pass the functor directly to futures.map -- this creates memory leaks
 # Wrapper that evals with the local functor
@@ -71,18 +71,21 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
 	max_x=[600,600]
 	nb_bin=50
 	grid=build_grid(min_x, max_x, nb_bin)
+	stats=None
 	if (evolvability_nb_samples>0):
 		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
 	else:
 		stats=get_stat_coverage(grid,indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
 
-	params={"IND_SIZE":controller.n_weights, 
-		"CXPB":0,
-		"MUTPB":0.5,
-		"NGEN":nb_gen,
-		"STATS":stats,
-		"MIN": -10,
-		"MAX": 10,
+	params={"IND_SIZE":eval_dist_maze.controller.n_weights, 
+		"CXPB":0, # No crossover
+		"MUTPB":1., # All offspring are mutated...
+		"INDPB":0.1, # ...but only 10% of parameters are mutated
+		"ETA_M": 15.0, # Eta parameter for polynomial mutation
+		"NGEN":nb_gen, # Number of generations
+		"STATS":stats, # Statistics
+		"MIN": -5, # Seems reasonable for NN weights
+		"MAX": 5, # Seems reasonable for NN weights
 		"MU": pop_size,
 		"LAMBDA": pop_size*2,
 		"K":15,
