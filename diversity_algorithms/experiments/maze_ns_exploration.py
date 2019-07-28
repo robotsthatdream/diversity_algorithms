@@ -69,7 +69,7 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
         """
 	min_x=[0,0]
 	max_x=[600,600]
-	nb_bin=10
+	nb_bin=50
 	grid=build_grid(min_x, max_x, nb_bin)
 	if (evolvability_nb_samples>0):
 		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
@@ -91,7 +91,10 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
                 "EVOLVABILITY_NB_SAMPLES": evolvability_nb_samples,
                 "EVOLVABILITY_PERIOD":evolvability_period,
                 "DUMP_PERIOD_POP": dump_period_pop,
-                "DUMP_PERIOD_BD": dump_period_bd
+                "DUMP_PERIOD_BD": dump_period_bd,
+                "MIN_X": min_x, # not used by NS. It is just to keep track of it in the saved param file
+                "MAX_X": max_x, # not used by NS. It is just to keep track of it in the saved param file
+                "NB_BIN":nb_bin # not used by NS. It is just to keep track of it in the saved param file
 	}
 	
 	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
@@ -128,7 +131,7 @@ if(__name__=='__main__'):
                 sys.exit(2)
 	for opt, arg in opts:
 		if opt == '-h':
-                        print(sys.argv[0]+" -p <population size> -g <number of generations>")
+                        print(sys.argv[0]+" -p <population size> -g <number of generations> -e <nb of samples for indiv evolvability estimation> -P <period of evolvability estimation>")
                         sys.exit()
 		elif opt in ("-p", "--pop_size"):
                                   pop_size = int(arg)

@@ -71,14 +71,7 @@ def get_updated_coverage(grid,lbd,x,min_x=None, max_x=None, gen_window=10):
     update_grid(grid,min_x, max_x,bdx)
 
     if ready:
-        grid_uniform=np.ones(np.shape(grid))
-        nb_bin=np.shape(grid)    
-        nbc=reduce(lambda x,y:x*y,nb_bin,1)
-        nbsamples=np.sum(grid)
-        grid_uniform=nbsamples/nbc*grid_uniform
-        if (nbsamples<nbc):
-            print("Warning, too few samples to estimate coverage: nbsamples=%d, nbcells=%d"%(nbsamples,nbc))
-        return coverage(grid),jensen_shannon_distance(grid,grid_uniform)
+        return coverage(grid),jensen_shannon_distance(grid,generate_uniform_grid(grid))
     else:
         return None,None
 
@@ -105,14 +98,17 @@ def get_indiv_coverage(x, min_x=None, max_x=None,nb_bin=None):
         lbd=[]
         icov.append(get_updated_coverage(grid,lbd, ind.evolvability_samples, min_x=min_x, max_x=max_x, gen_window=0))
         ind.evolvability_grid=grid
+
     # Computing the specialization
     for ind1 in x:
-        grid=np.array(ind1.evolvability_grid)
+        spec=[]
         for ind2 in x:
             if (ind1 == ind2):
                 continue
+            grid=np.array(ind1.evolvability_grid)
             grid=grid*ind2.evolvability_grid
-        specialization.append(np.count_nonzero(ind1.evolvability_grid)-np.count_nonzero(grid))
+            spec.append(np.count_nonzero(ind1.evolvability_grid)-np.count_nonzero(grid))
+        specialization.append([min(spec),float(sum(spec))/float(len(spec)),max(spec)])
 
     return icov,specialization
 
