@@ -54,7 +54,7 @@ def eval_with_functor(g):
 	return eval_dist_maze(g)
 
 
-def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=100, dump_period_pop=10, dump_period_bd=1):
+def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1):
 	"""Launch a novelty search run on the maze
         
 	Launch a novelty search run on the maze:
@@ -72,10 +72,14 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
 	nb_bin=50
 	grid=build_grid(min_x, max_x, nb_bin)
 	stats=None
+	nbc=nb_bin**2
+	nbs=nbc*2 # min 2 samples per bin
+	evolvability_nb_samples=nbs
+	window_global=nbs/pop_size
 	if (evolvability_nb_samples>0):
-		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
+		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
 	else:
-		stats=get_stat_coverage(grid,indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin)
+		stats=get_stat_coverage(grid,indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
 
 	params={"IND_SIZE":eval_dist_maze.controller.n_weights, 
 		"CXPB":0, # No crossover
@@ -97,7 +101,8 @@ def launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period=10
                 "DUMP_PERIOD_BD": dump_period_bd,
                 "MIN_X": min_x, # not used by NS. It is just to keep track of it in the saved param file
                 "MAX_X": max_x, # not used by NS. It is just to keep track of it in the saved param file
-                "NB_BIN":nb_bin # not used by NS. It is just to keep track of it in the saved param file
+                "NB_BIN":nb_bin, # not used by NS. It is just to keep track of it in the saved param file
+                "GLOBAL_WINDOW_SIZE": window_global
 	}
 	
 	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
@@ -130,7 +135,7 @@ if(__name__=='__main__'):
 	try:
                 opts, args = getopt.getopt(sys.argv[1:],"hp:g:e:P:",["pop_size=","nb_gen=", "evolvability_nb_samples=","evolvability_period="])
 	except getopt.GetoptError:
-                print(sys.argv[0]+" -p <population size> -g <number of generations> -e <evolvability_nb_samples> -P <evolvability_period>")
+                print(sys.argv[0]+" -p <population size> -g <number of generations> -e <evolvability_period>")
                 sys.exit(2)
 	for opt, arg in opts:
 		if opt == '-h':
@@ -140,12 +145,10 @@ if(__name__=='__main__'):
                                   pop_size = int(arg)
 		elif opt in ("-g", "--nb_gen"):
                                   nb_gen = int(arg)
-		elif opt in ("-e", "--evolvability_nb_samples"):
-                                  evolvability_nb_samples = int(arg)
-		elif opt in ("-P", "--evolvability_period"):
+		elif opt in ("-e", "--evolvability_period"):
                                   evolvability_period = int(arg)
 
-	pop, logbook = launch_nov(pop_size, nb_gen, evolvability_nb_samples, evolvability_period)
+	pop, logbook = launch_nov(pop_size, nb_gen, evolvability_period)
 
 	
 	print("The population, log, archives, etc have been dumped in: "+run_name)
