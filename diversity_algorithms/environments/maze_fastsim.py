@@ -8,7 +8,7 @@ import numpy as np
 import time
 #import resource
 
-from diversity_algorithms.controllers import SimpleNeuralController
+from diversity_algorithms.controllers import SimpleNeuralController, DNNController
 
 # Fitness/evaluation function
 

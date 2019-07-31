@@ -8,13 +8,13 @@
 
 import numpy as np
 
-from graph_tools_dnn import DNN, initDNN, mutDNN
+from diversity_algorithms.controllers.graph_tool_dnn import DNN
 
 from deap.tools import mutPolynomialBounded
 
 
-def initDNN(in_size, out_size)
-	return DNN(in_size, out_size)
+def initDNN(Indivclass, in_size, out_size):
+	return Indivclass(in_size, out_size)
 
 
 def mutDNN(dnn, indiv_mutation_rate_wb, mutation_eta):
@@ -30,6 +30,6 @@ def mutDNN(dnn, indiv_mutation_rate_wb, mutation_eta):
 		
 
 
-def mateDNNDummy(dnn1, dnn2, alpha=0.5)
+def mateDNNDummy(dnn1, dnn2, alpha=0.5):
 	return (dnn1, dnn2)
 

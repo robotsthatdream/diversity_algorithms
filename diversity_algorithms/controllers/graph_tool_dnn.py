@@ -53,8 +53,8 @@ class DNN:
 		self.af = activations
 		self.af_out = activations_out
 		self.min_w = min_w
-		self.min_w = max_w
-		self.param_initializer = lambda : param_initializer_func(min_w, max_w)
+		self.max_w = max_w
+		self.param_initializer_func = param_initializer_func
 
 		# Add ins
 		self.in_nodes = list()
@@ -70,13 +70,13 @@ class DNN:
 			v_out = self.nn.add_vertex()
 			self.out_nodes.append(v_out)
 			#Initialize unit
-			self.nn.vp.bias[v_out] = self.param_initializer()
+			self.nn.vp.bias[v_out] = self.param_initializer_func(self.min_w, self.max_w)
 			self.nn.vp.activations[v_out] = 0.
 			self.nn.vp.outputs[v_out] = 0.
 			self.nn.vp.out_ok[v_out] = False
 			for v_in in self.in_nodes:
 				e = self.nn.add_edge(v_in, v_out)
-				self.nn.ep.weights[e] = self.param_initializer()
+				self.nn.ep.weights[e] = self.param_initializer_func(self.min_w, self.max_w)
 		
 		# Initialize hidden nodes list
 		self.hidden_nodes = list()
@@ -132,6 +132,25 @@ class DNN:
 		return self.output()
 		
 
-
-
-
+class DNNController: # Wrapper compatible with fixed structure controller API
+	def __init__(self, n_in, n_out, n_hidden_layers=2, n_neurons_per_hidden=5, params=None):
+		#TODO: implement initialization with hidden neurons
+		self.n_in = n_in
+		self.n_out = n_out
+		self.dnn = DNN(n_in, n_out)
+	
+	def get_parameters(self):
+		return self.dnn
+	
+	def set_parameters(self, dnn):
+		self.dnn = dnn
+	
+	def __call__(self,x):
+		return self.dnn.step(x)
+	
+	def predict(self,x):
+		if(len(x.shape) == 1):
+			return self.__call__(x)
+		else:
+			# TODO: Implement - maybe
+			return None

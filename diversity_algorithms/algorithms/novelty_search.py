@@ -8,6 +8,8 @@ import os
 import array
 
 
+from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
+
 creator = None
 def set_creator(cr):
     global creator
@@ -229,37 +231,6 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
             
     return population, archive, logbook
 
- # Individual generator
-#def generateES(icls, scls, size, imin, imax, smin, smax):
-#    ind = icls(random.uniform(imin, imax) for _ in range(size))
-#    ind.strategy = scls(random.uniform(smin, smax) for _ in range(size))
-#    return ind
-
-def checkStrategyMin(minstrategy):
-    def decorator(func):
-        def wrappper(*args, **kargs):
-            children = func(*args, **kargs)
-            for child in children:
-                for i, s in enumerate(child.strategy):
-                    if s < minstrategy:
-                        child.strategy[i] = minstrategy
-            return children
-        return wrappper
-    return decorator
-
-def checkStrategyMinMax(minstrategy,maxstrategy):
-    def decorator(func):
-        def wrappper(*args, **kargs):
-            children = func(*args, **kargs)
-            for child in children:
-                for i, s in enumerate(child.strategy):
-                    if s < minstrategy:
-                        child.strategy[i] = minstrategy
-                    if s > maxstrategy:
-                        child.strategy[i] = maxstrategy
-            return children
-        return wrappper
-    return decorator
 
 
 
@@ -293,15 +264,31 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX"):
 
          
     toolbox = base.Toolbox()
-    toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
+
+#    # With fixed NN
+#    # -------------
+#    toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
+#    
+#    toolbox.register("individual", tools.initRepeat, creator.Individual,
+#                 toolbox.attr_float, n=params["IND_SIZE"])
+#    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+#    toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
+
+#    # Polynomial mutation with eta=15, and p=0.1 as for Leni
+#    toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["ETA_M"], indpb=params["INDPB"], low=params["MIN"], up=params["MAX"])
+
+
+    # With DNN
+    #---------
     
-    toolbox.register("individual", tools.initRepeat, creator.Individual,
-                 toolbox.attr_float, n=params["IND_SIZE"])
+    toolbox.register("individual", initDNN, creator.Individual, in_size=params["GENO_N_IN"],out_size=params["GENO_N_OUT"])
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
+    toolbox.register("mate", mateDNNDummy, alpha=params["ALPHA"])
 
     # Polynomial mutation with eta=15, and p=0.1 as for Leni
-    toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["ETA_M"], indpb=params["INDPB"], low=params["MIN"], up=params["MAX"])
+    toolbox.register("mutate", mutDNN, mutation_eta=params["ETA_M"], indiv_mutation_rate_wb=params["INDPB"])
+    
+    
     toolbox.register("select", tools.selBest, fit_attr='novelty')
     toolbox.register("evaluate", evaluate)
 
@@ -309,10 +296,6 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX"):
     if(pool):
         toolbox.register("map", pool.map)
     
-#    toolbox.decorate("mate", checkStrategy(params["MIN_STRATEGY"], params["MAX_STRATEGY"]))
-#    toolbox.decorate("mutate", checkStrategy(params["MIN_STRATEGY"], params["MAX_STRATEGY"]))
-#    toolbox.decorate("mate", checkStrategyMin(params["MIN_STRATEGY"]))
-#    toolbox.decorate("mutate", checkStrategyMin(params["MIN_STRATEGY"]))
 
     pop = toolbox.population(n=params["MU"])
     

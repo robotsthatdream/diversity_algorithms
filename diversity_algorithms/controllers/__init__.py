@@ -1,7 +1,9 @@
 # coding: utf-8
 
 from diversity_algorithms.controllers.fixed_structure_nn import SimpleNeuralController
-from diversity_algorithms.controllers.deap_tools_dnn import DNN, 
+from diversity_algorithms.controllers.graph_tool_dnn import DNN, DNNController
+from diversity_algorithms.controllers.deap_tools_dnn import initDNN, mutDNN, mateDNNDummy
 
 
-__all__ = ["fixed_structure_nn", "deap_tools_dnn"] 
+
+__all__ = ["fixed_structure_nn", "graph_tool_dnn", "deap_tools_dnn"] 
