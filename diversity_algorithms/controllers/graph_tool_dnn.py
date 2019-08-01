@@ -116,6 +116,7 @@ class DNN:
 						good = False
 						break
 				if(good): # If all in_neighbours could be processed
+					a += self.nn.vp.bias[n] # Add the bias
 					self.nn.vp.activations[n] = a # Set activtion
 					if n in self.out_nodes: # If output node...
 						self.nn.vp.outputs[n] = self.af_out(a)  # ...use output activation func
