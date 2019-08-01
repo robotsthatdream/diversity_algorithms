@@ -286,7 +286,7 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX"):
     toolbox.register("mate", mateDNNDummy, alpha=params["ALPHA"])
 
     # Polynomial mutation with eta=15, and p=0.1 as for Leni
-    toolbox.register("mutate", mutDNN, mutation_eta=params["ETA_M"], indiv_mutation_rate_wb=params["INDPB"])
+    toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["DNN_MUT_PB_WB"], mutation_eta=params["DNN_MUT_ETA_WB"], mutation_rate_add_conn=params["DNN_MUT_PB_ADD_CONN"], mutation_rate_del_conn=params["DNN_MUT_PB_DEL_CONN"], mutation_rate_add_node=params["DNN_MUT_PB_ADD_NODE"], mutation_rate_del_node=params["DNN_MUT_PB_DEL_NODE"])
     
     
     toolbox.register("select", tools.selBest, fit_attr='novelty')

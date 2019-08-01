@@ -51,7 +51,7 @@ def init_nn():
 	return nn
 
 
-
+max_tries_new_conn = 100 # How many times the algorithms will try to find a new valid connection target before giving up
 
 class DNN:
 	def __init__(self, n_in, n_out, n_hidden=0, activations=sigmoid, activations_out=tanh, min_w=-5, max_w=5, param_initializer_func=np.random.uniform):
@@ -153,6 +153,18 @@ class DNN:
 	
 	def n_units(self): # Return the number of true neurons i.e. non-input vertices
 		return (len(self.hidden_nodes)+len(self.out_nodes))
+
+	def n_in(self): # Return the number of inputs
+		return len(self.in_nodes)
+
+	def n_out(self): # Return the number of outputs
+		return len(self.out_nodes)
+
+	def n_hidden(self): # Return the number of hidden neurons
+		return len(self.hidden_nodes)
+	
+	def n_conns(self): # Return the number of connections
+		return self.nn.num_edges()
 	
 	def _get_in_candidate(self): # A candidate for a new in edge is a non-output node
 		return np.random.choice(self.hidden_nodes+self.in_nodes)
@@ -164,7 +176,50 @@ class DNN:
 	def check_no_loop(self, in_candidate, out_candidate):
 		# See if there is a path from *out* to *in*. If there is, adding the edge would close the loop and we shouldn't
 		d = shortest_distance(self.nn, out_candidate, in_candidate)
-		return (d < npiinfo('int32').max) # Returns max int32 value if no path
+		return (d == np.iinfo('int32').max) # Returns max int32 value if no path
+	
+	# Checks if in_candidate and out_candidate are not already connected (dist = 1) or the same neuron (dist = 0)
+	def check_not_same_or_neighbors(self, in_candidate, out_candidate):
+		# See if the distance from in to out is not 1 (neighbours) or 0 (same neuron)
+		d = shortest_distance(self.nn, in_candidate, out_candidate)
+		return (d > 1)
+	
+	# Add a random connection between two neurons :
+	# - Different
+	# - Not already directly connected
+	# - So that creating the connection would not create a cycle
+	# - The out unit cannot be input and the in units cannot be outputs
+	def add_random_conn(self):
+		vertices_in_candidates = self.in_nodes + self.hidden_nodes
+		vertices_out_candidates = self.out_nodes + self.hidden_nodes
+		for i in range(max_tries_new_conn):
+			v1 = np.random.choice(vertices_in_candidates)
+			v2 = np.random.choice(vertices_out_candidates)
+			if(self.check_no_loop(v1,v2) and self.check_not_same_or_neighbors(v1,v2)): # Valid pair - not actually the same neuron, not already connected, will not create a cycle
+				e = self.nn.add_edge(v1, v2)
+				self.nn.ep.weights[e] = self._random_weight()
+				return True
+		return False # could not create connection
+	
+	
+	# Delete random connection
+	def del_random_conn(self):
+		edges = list(self.nn.edges())
+		e = np.random.choice(edges)
+		self.nn.remove_edge(e)
+	
+	# Add new hidden node on random edge
+	def add_node_on_random_edge(self):
+		edges = list(self.nn.edges())
+		e = np.random.choice(edges)
+		# Put a new unit on it with random weights
+		self._add_node_on_edge(e)
+
+	# Delete random hidden node
+	def del_random_hidden(self):
+		v = np.random.choice(self.hidden_nodes)
+		self.hidden_nodes.remove(v)
+		self.nn.remove_vertex(v)
 	
 	def _add_node_on_edge(self,e,weights="copytoboth"):
 		# Determine weights of future edges
@@ -219,11 +274,11 @@ class DNN:
 
 
 class DNNController: # Wrapper compatible with fixed structure controller API
-	def __init__(self, n_in, n_out, n_hidden_layers=2, n_neurons_per_hidden=5, params=None):
+	def __init__(self, n_in, n_out, n_hidden=5, params=None):
 		#TODO: implement initialization with hidden neurons
 		self.n_in = n_in
 		self.n_out = n_out
-		self.dnn = DNN(n_in, n_out)
+		self.dnn = DNN(n_in, n_out, n_hidden)
 	
 	def get_parameters(self):
 		return self.dnn
