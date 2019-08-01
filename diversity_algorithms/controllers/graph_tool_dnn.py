@@ -42,6 +42,12 @@ def init_nn():
 	ok = nn.new_vertex_property("bool")  # Create out OK flag
 	nn.vertex_properties["out_ok"] = ok
 	
+	# Save in/out node status in the graph for pickling
+	is_in = nn.new_vertex_property("bool")
+	nn.vertex_properties["is_in"] = is_in
+	
+	is_out = nn.new_vertex_property("bool")
+	nn.vertex_properties["is_out"] = is_out
 	return nn
 
 
@@ -63,6 +69,8 @@ class DNN:
 			self.in_nodes.append(v_in)
 			self.nn.vp.outputs[v_in] = 0.
 			self.nn.vp.out_ok[v_in] = False
+			self.nn.vp.is_in[v_in] = True
+			self.nn.vp.is_out[v_in] = False
 	
 		# Add outs and create basic single layer perceptron structure
 		self.out_nodes = list()
@@ -74,6 +82,8 @@ class DNN:
 			self.nn.vp.activations[v_out] = 0.
 			self.nn.vp.outputs[v_out] = 0.
 			self.nn.vp.out_ok[v_out] = False
+			self.nn.vp.is_in[v_out] = False
+			self.nn.vp.is_out[v_out] = True
 			for v_in in self.in_nodes:
 				e = self.nn.add_edge(v_in, v_out)
 				self.nn.ep.weights[e] = self.param_initializer_func(self.min_w, self.max_w)
@@ -130,7 +140,32 @@ class DNN:
 		self._propagate()
 		# Read and return output
 		return self.output()
-		
+	
+	def __getstate__(self):
+		state = self.__dict__.copy()
+		# Vertex list not inside a Graph are not picklable
+		# Remove them and rebuild them from graph info at unpickle time
+		del state["hidden_nodes"]
+		del state["out_nodes"]
+		del state["in_nodes"]
+		return state
+	
+	def __setstate__(self, state):
+		# Restore picklable members
+		self.__dict__.update(state)
+		# Vertex list not inside a Graph are not picklable
+		# Rebuild them from graph info at unpickle time
+		self.in_nodes = list()
+		self.hidden_nodes = list()
+		self.out_nodes = list()
+		for v in self.nn.vertices():
+			if(self.nn.vp.is_in[v]):
+				self.in_nodes.append(v)
+			elif(self.nn.vp.is_out[v]):
+				self.out_nodes.append(v)
+			else:
+				self.hidden_nodes.append(v)
+
 
 class DNNController: # Wrapper compatible with fixed structure controller API
 	def __init__(self, n_in, n_out, n_hidden_layers=2, n_neurons_per_hidden=5, params=None):
