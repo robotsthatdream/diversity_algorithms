@@ -79,7 +79,7 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 	stats=None
 	nbc=nb_bin**2
 	nbs=nbc*2 # min 2 samples per bin
-	evolvability_nb_samples=nbs
+	evolvability_nb_samples=0# disable that for now nbs
 	window_global=nbs/pop_size
 	if (evolvability_nb_samples>0):
 		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
