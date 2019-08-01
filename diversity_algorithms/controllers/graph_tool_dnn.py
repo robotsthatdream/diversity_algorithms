@@ -54,7 +54,7 @@ def init_nn():
 
 
 class DNN:
-	def __init__(self, n_in, n_out, activations=sigmoid, activations_out=tanh, min_w=-5, max_w=5, param_initializer_func=np.random.uniform):
+	def __init__(self, n_in, n_out, n_hidden=0, activations=sigmoid, activations_out=tanh, min_w=-5, max_w=5, param_initializer_func=np.random.uniform):
 		self.nn = init_nn()
 		self.af = activations
 		self.af_out = activations_out
@@ -78,7 +78,7 @@ class DNN:
 			v_out = self.nn.add_vertex()
 			self.out_nodes.append(v_out)
 			#Initialize unit
-			self.nn.vp.bias[v_out] = self.param_initializer_func(self.min_w, self.max_w)
+			self.nn.vp.bias[v_out] = self._random_weight()
 			self.nn.vp.activations[v_out] = 0.
 			self.nn.vp.outputs[v_out] = 0.
 			self.nn.vp.out_ok[v_out] = False
@@ -86,10 +86,20 @@ class DNN:
 			self.nn.vp.is_out[v_out] = True
 			for v_in in self.in_nodes:
 				e = self.nn.add_edge(v_in, v_out)
-				self.nn.ep.weights[e] = self.param_initializer_func(self.min_w, self.max_w)
+				self.nn.ep.weights[e] = self._random_weight()
 		
 		# Initialize hidden nodes list
 		self.hidden_nodes = list()
+		# Add random hidden units
+		for i in range(n_hidden):
+			# Pick random edge
+			edges = list(self.nn.edges())
+			e = np.random.choice(edges)
+			# Put a new unit on it with random weights
+			self._add_node_on_edge(e, weights="random")
+	
+	def _random_weight(self):
+		return self.param_initializer_func(self.min_w, self.max_w)
 	
 	def _propagate(self):
 		nodes_to_activate = self.hidden_nodes + self.out_nodes
@@ -100,7 +110,7 @@ class DNN:
 				good = True
 				for e in n.in_edges():
 					in_neigh = e.source()
-					if(self.nn.vp.out_ok[in_neigh] == True): # If output has been computed
+					if(self.nn.vp.out_ok[in_neigh]): # If output has been computed
 						a += self.nn.vp.outputs[in_neigh]*self.nn.ep.weights[e] # Compute contribution to activation
 					else:
 						good = False
@@ -141,6 +151,47 @@ class DNN:
 		# Read and return output
 		return self.output()
 	
+	def n_units(self): # Return the number of true neurons i.e. non-input vertices
+		return (len(self.hidden_nodes)+len(self.out_nodes))
+	
+	def _get_in_candidate(self): # A candidate for a new in edge is a non-output node
+		return np.random.choice(self.hidden_nodes+self.in_nodes)
+	
+	def _get_out_candidate(self): # A candidate for a new in edge is a non-input node
+		return np.random.choice(self.hidden_nodes+self.out_nodes)
+	
+	# Checks if adding an edge from in_candidate to out_candidate will create a loop. We don't want that for a FF network
+	def check_no_loop(self, in_candidate, out_candidate):
+		# See if there is a path from *out* to *in*. If there is, adding the edge would close the loop and we shouldn't
+		d = shortest_distance(self.nn, out_candidate, in_candidate)
+		return (d < npiinfo('int32').max) # Returns max int32 value if no path
+	
+	def _add_node_on_edge(self,e,weights="copytoboth"):
+		# Determine weights of future edges
+		old_w = self.nn.ep.weights[e]
+		if(weights=="copytoboth"):
+			w1 = old_w
+			w2 = old_w
+		elif(weights=="random"):
+			w1 = self._random_weight()
+			w2 = self._random_weight()
+		v1 = e.source()
+		v2 = e.target()
+		# Remove edge
+		self.nn.remove_edge(e)
+		# Create new node and its attributes
+		v_new = self.nn.add_vertex()
+		self.nn.vp.bias[v_new] = self._random_weight()
+		self.nn.vp.is_in[v_new] = False
+		self.nn.vp.is_out[v_new] = False
+		self.nn.vp.out_ok[v_new] = False
+		self.hidden_nodes.append(v_new)
+		# Create edges and weights
+		e1 = self.nn.add_edge(v1, v_new)
+		self.nn.ep.weights[e1] = w1
+		e2 = self.nn.add_edge(v_new, v2)
+		self.nn.ep.weights[e2] = w2
+		
 	def __getstate__(self):
 		state = self.__dict__.copy()
 		# Vertex list not inside a Graph are not picklable
