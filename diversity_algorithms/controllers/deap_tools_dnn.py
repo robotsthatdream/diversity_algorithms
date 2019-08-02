@@ -42,16 +42,20 @@ def mutDNN(dnn, # Individual to mutte
 		dnn.nn.vp.bias[v] = new_b
 	# Add connection
 	if((dnn.n_conns() < n_max_conns) and (np.random.random() < mutation_rate_add_conn)):
+		print("Added conn!!")
 		dnn.add_random_conn()
 	# Del connection
 	if((dnn.n_conns() > n_min_conns) and (np.random.random() < mutation_rate_del_conn)):
+		print("Deleted conn!!")
 		dnn.del_random_conn()
 	# Add node on a random edge
 	if((dnn.n_hidden() < n_max_hidden) and (np.random.random() < mutation_rate_add_node)):
+		print("Added node!!")
 		dnn.add_node_on_random_edge()
 	
 	# Del random hidden node
 	if((dnn.n_hidden() > n_min_hidden) and (np.random.random() < mutation_rate_del_node)):
+		print("Deleted node!!")
 		dnn.del_random_hidden()
 	return (dnn,)
 

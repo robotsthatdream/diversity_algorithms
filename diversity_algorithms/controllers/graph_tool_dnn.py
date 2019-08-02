@@ -7,6 +7,8 @@
 """ 
 
 import numpy as np
+import pickle as pk
+import sys
 
 from graph_tool.all import *
 
@@ -108,25 +110,44 @@ class DNN:
 			for n in nodes_to_activate:
 				a = 0.
 				good = True
-				for e in n.in_edges():
-					in_neigh = e.source()
-					if(self.nn.vp.out_ok[in_neigh]): # If output has been computed
-						a += self.nn.vp.outputs[in_neigh]*self.nn.ep.weights[e] # Compute contribution to activation
+				try:
+					for e in n.in_edges():
+						in_neigh = e.source()
+						if(self.nn.vp.out_ok[in_neigh]): # If output has been computed
+							a += self.nn.vp.outputs[in_neigh]*self.nn.ep.weights[e] # Compute contribution to activation
+						else:
+							good = False
+							break
+					if(good): # If all in_neighbours could be processed
+						a += self.nn.vp.bias[n] # Add the bias
+						self.nn.vp.activations[n] = a # Set activtion
+						if n in self.out_nodes: # If output node...
+							self.nn.vp.outputs[n] = self.af_out(a)  # ...use output activation func
+						else:
+							self.nn.vp.outputs[n] = self.af(a) # ...else use regular activation func
+						self.nn.vp.out_ok[n] = True # the neuron has been processed
 					else:
-						good = False
-						break
-				if(good): # If all in_neighbours could be processed
-					a += self.nn.vp.bias[n] # Add the bias
-					self.nn.vp.activations[n] = a # Set activtion
-					if n in self.out_nodes: # If output node...
-						self.nn.vp.outputs[n] = self.af_out(a)  # ...use output activation func
-					else:
-						self.nn.vp.outputs[n] = self.af(a) # ...else use regular activation func
-					self.nn.vp.out_ok[n] = True # the neuron has been processed
-				else:
-					new_nodes.append(n) # We will try again at next iteration
+						new_nodes.append(n) # We will try again at next iteration
+				except ValueError as e:
+					print("*****************ERROR*****************")
+					print("Exception: %s" % str(e))
+					print("Pickling objects...")
+					with open("err_graph.pk",'wb') as fd:
+						pk.dump(self.nn,fd)
+					with open("err_dnn.pk",'wb') as fd:
+						pk.dump(self,fd)
+					print("Current nodes_to_activate: %s" % str(nodes_to_activate))
+					self.describe()
+					print("in_nodes : %s" % str(self.in_nodes))
+					print("out_nodes : %s" % str(self.out_nodes))
+					print("hidden_nodes : %s" % str(self.hidden_nodes))
+					print("Exiting...")
+					sys.exit(1)
 			nodes_to_activate = new_nodes # Update list
 	
+	
+	def describe(self):
+		print("Feedforward DNN with %d inputs, %d outputs, %d hidden units and %d connections" % (self.n_in(), self.n_out(), self.n_hidden(), self.n_conns()))
 	
 	def output(self):
 		outs = list()
@@ -191,11 +212,9 @@ class DNN:
 	# - So that creating the connection would not create a cycle
 	# - The out unit cannot be input and the in units cannot be outputs
 	def add_random_conn(self):
-		vertices_in_candidates = self.in_nodes + self.hidden_nodes
-		vertices_out_candidates = self.out_nodes + self.hidden_nodes
 		for i in range(max_tries_new_conn):
-			v1 = np.random.choice(vertices_in_candidates)
-			v2 = np.random.choice(vertices_out_candidates)
+			v1 = self._get_in_candidate()
+			v2 = self._get_out_candidate()
 			if(self.check_no_loop(v1,v2) and self.check_not_same_or_neighbors(v1,v2)): # Valid pair - not actually the same neuron, not already connected, will not create a cycle
 				e = self.nn.add_edge(v1, v2)
 				self.nn.ep.weights[e] = self._random_weight()
@@ -221,6 +240,7 @@ class DNN:
 		v = np.random.choice(self.hidden_nodes)
 		self.hidden_nodes.remove(v)
 		self.nn.remove_vertex(v)
+		self._regenerate_node_lists() # Necessary to remove issus
 	
 	def _add_node_on_edge(self,e,weights="copytoboth"):
 		# Determine weights of future edges
@@ -247,7 +267,21 @@ class DNN:
 		self.nn.ep.weights[e1] = w1
 		e2 = self.nn.add_edge(v_new, v2)
 		self.nn.ep.weights[e2] = w2
-		
+	
+	# Rebuild node lists from graph info
+	def _regenerate_node_lists(self):
+		self.in_nodes.clear()
+		self.out_nodes.clear()
+		self.hidden_nodes.clear()
+		for v in self.nn.vertices():
+			if(self.nn.vp.is_in[v]):
+				self.in_nodes.append(v)
+			elif(self.nn.vp.is_out[v]):
+				self.out_nodes.append(v)
+			else:
+				self.hidden_nodes.append(v)
+	
+	
 	def __getstate__(self):
 		state = self.__dict__.copy()
 		# Vertex list not inside a Graph are not picklable
@@ -265,13 +299,8 @@ class DNN:
 		self.in_nodes = list()
 		self.hidden_nodes = list()
 		self.out_nodes = list()
-		for v in self.nn.vertices():
-			if(self.nn.vp.is_in[v]):
-				self.in_nodes.append(v)
-			elif(self.nn.vp.is_out[v]):
-				self.out_nodes.append(v)
-			else:
-				self.hidden_nodes.append(v)
+		self._regenerate_node_lists()
+
 
 
 class DNNController: # Wrapper compatible with fixed structure controller API

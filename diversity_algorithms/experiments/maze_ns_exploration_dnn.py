@@ -97,9 +97,9 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 		"DNN_MUT_PB_WB":0.1, # Probability to mutate each weight and bias
 		"DNN_MUT_ETA_WB": 15.0, # Eta parameter for the polynomial mutation of weights and bias
 		"DNN_MUT_PB_ADD_NODE": 0.1, # Probability to add a neuron
-		"DNN_MUT_PB_DEL_NODE": 0.01, # Probability to add a neuron
-		"DNN_MUT_PB_ADD_CONN": 0.1, # Probability to add a neuron
-		"DNN_MUT_PB_DEL_CONN": 0.01, # Probability to add a neuron
+		"DNN_MUT_PB_DEL_NODE": 0.01, # Probability to remove a neuron
+		"DNN_MUT_PB_ADD_CONN": 0.1, # Probability to add a connection
+		"DNN_MUT_PB_DEL_CONN": 0.01, # Probability to remove a connection
 		# --------------
 		"NGEN":nb_gen, # Number of generations
 		"STATS":stats, # Statistics
