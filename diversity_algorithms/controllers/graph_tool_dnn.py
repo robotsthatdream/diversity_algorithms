@@ -110,39 +110,23 @@ class DNN:
 			for n in nodes_to_activate:
 				a = 0.
 				good = True
-				try:
-					for e in n.in_edges():
-						in_neigh = e.source()
-						if(self.nn.vp.out_ok[in_neigh]): # If output has been computed
-							a += self.nn.vp.outputs[in_neigh]*self.nn.ep.weights[e] # Compute contribution to activation
-						else:
-							good = False
-							break
-					if(good): # If all in_neighbours could be processed
-						a += self.nn.vp.bias[n] # Add the bias
-						self.nn.vp.activations[n] = a # Set activtion
-						if n in self.out_nodes: # If output node...
-							self.nn.vp.outputs[n] = self.af_out(a)  # ...use output activation func
-						else:
-							self.nn.vp.outputs[n] = self.af(a) # ...else use regular activation func
-						self.nn.vp.out_ok[n] = True # the neuron has been processed
+				for e in n.in_edges():
+					in_neigh = e.source()
+					if(self.nn.vp.out_ok[in_neigh]): # If output has been computed
+						a += self.nn.vp.outputs[in_neigh]*self.nn.ep.weights[e] # Compute contribution to activation
 					else:
-						new_nodes.append(n) # We will try again at next iteration
-				except ValueError as e:
-					print("*****************ERROR*****************")
-					print("Exception: %s" % str(e))
-					print("Pickling objects...")
-					with open("err_graph.pk",'wb') as fd:
-						pk.dump(self.nn,fd)
-					with open("err_dnn.pk",'wb') as fd:
-						pk.dump(self,fd)
-					print("Current nodes_to_activate: %s" % str(nodes_to_activate))
-					self.describe()
-					print("in_nodes : %s" % str(self.in_nodes))
-					print("out_nodes : %s" % str(self.out_nodes))
-					print("hidden_nodes : %s" % str(self.hidden_nodes))
-					print("Exiting...")
-					sys.exit(1)
+						good = False
+						break
+				if(good): # If all in_neighbours could be processed
+					a += self.nn.vp.bias[n] # Add the bias
+					self.nn.vp.activations[n] = a # Set activtion
+					if n in self.out_nodes: # If output node...
+						self.nn.vp.outputs[n] = self.af_out(a)  # ...use output activation func
+					else:
+						self.nn.vp.outputs[n] = self.af(a) # ...else use regular activation func
+					self.nn.vp.out_ok[n] = True # the neuron has been processed
+				else:
+					new_nodes.append(n) # We will try again at next iteration
 			nodes_to_activate = new_nodes # Update list
 	
 	
