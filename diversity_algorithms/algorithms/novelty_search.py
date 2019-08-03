@@ -148,7 +148,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
 
     # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
-    if (evolvability_nb_samples>0):
+    if (evolvability_nb_samples>0) and (evolvability_period>0):
         print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
         print("sampling for evolvability: ",end='', flush=True)
         for ind in population:
@@ -209,6 +209,13 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         # Select the next generation population
         population[:] = toolbox.select(pq, mu)        
 
+        if(dump_period_bd and(gen % dump_period_bd == 0)): # Dump behavior descriptors
+            dump_bd=open(run_name+"/bd_pop_%04d.log"%gen,"w")
+            for ind in population:
+                dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
+            dump_bd.close()
+
+        
         # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
         if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period == 0):
             print("sampling for evolvability: ",end="", flush=True)

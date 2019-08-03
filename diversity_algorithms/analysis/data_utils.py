@@ -78,11 +78,11 @@ def get_points_per_gen_from_genfiles(bdfiles):
     return get_points_per_gen_from_files(bdfiles,extractfunc=get_points_from_genfile)
 
 
-def merge_gens(gendict,max_gen=-1):
+def merge_gens(gendict,max_gen=-1, min_gen=-1):
     out = list()
     gen=list(gendict.keys())
     for g in gen:
-        if (max_gen<0) or (g<max_gen): 
+        if ((max_gen<0) or (g<max_gen)) and ((min_gen<0) or (g>=min_gen)): 
             out += gendict[g]
     return out
 

@@ -76,7 +76,7 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 	nbs=nbc*2 # min 2 samples per bin
 	evolvability_nb_samples=nbs
 	window_global=nbs/pop_size
-	if (evolvability_nb_samples>0):
+	if (evolvability_period>0) and (evolvability_nb_samples>0):
 		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
 	else:
 		stats=get_stat_coverage(grid,indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
@@ -106,7 +106,7 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 	}
 	
 	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
-	if (evolvability_nb_samples>0):
+	if (evolvability_period>0) and (evolvability_nb_samples>0):
                 print("WARNING, evolvability_nb_samples>0. The run will last much longer...")
 
 	if with_scoop:
