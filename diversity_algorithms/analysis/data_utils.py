@@ -16,10 +16,9 @@ def listify(x):
         return [x]
 
 re_bdfile = re.compile("bd_(....).log")
+re_bdpopfile = re.compile("bd_pop_(....).log")
 re_genfile = re.compile("pop_gen(.+).npz")
 
-re_bdfile = re.compile("bd_(....).log")
-re_genfile = re.compile("pop_gen(.+).npz")
 
 # From BD files
 def get_files_per_gen(regex, data_dirs=".", gens=None): #Default : local dir, all gens
@@ -42,6 +41,9 @@ def get_files_per_gen(regex, data_dirs=".", gens=None): #Default : local dir, al
 
 def get_bdfiles_per_gen(data_dirs=".", gens=None):
     return get_files_per_gen(re_bdfile, data_dirs, gens)
+
+def get_bdpopfiles_per_gen(data_dirs=".", gens=None):
+    return get_files_per_gen(re_bdpopfile, data_dirs, gens)
 
 def get_genfiles_per_gen(data_dirs=".", gens=None):
     return get_files_per_gen(re_genfile, data_dirs, gens)
@@ -78,11 +80,11 @@ def get_points_per_gen_from_genfiles(bdfiles):
     return get_points_per_gen_from_files(bdfiles,extractfunc=get_points_from_genfile)
 
 
-def merge_gens(gendict,max_gen=-1):
+def merge_gens(gendict,max_gen=-1, min_gen=-1):
     out = list()
     gen=list(gendict.keys())
     for g in gen:
-        if (max_gen<0) or (g<max_gen): 
+        if ((max_gen<0) or (g<max_gen)) and ((min_gen<0) or (g>=min_gen)): 
             out += gendict[g]
     return out
 
