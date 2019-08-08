@@ -27,7 +27,7 @@ def gen_simplemlp(n_in, n_out, n_hidden_layers=2, n_neurons_per_hidden=5):
     return m
     
 
-class SimpleNeuralController():
+class SimpleNeuralControllerKeras():
     def __init__(self, n_in, n_out, n_hidden_layers=2, n_neurons_per_hidden=5, params=None):
         self.dim_in = n_in
         self.dim_out = n_out

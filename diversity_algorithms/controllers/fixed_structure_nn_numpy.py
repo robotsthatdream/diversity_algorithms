@@ -25,7 +25,7 @@ def gen_simplemlp(n_in, n_out, n_hidden_layers=2, n_neurons_per_hidden=5):
     return m
     
 
-class SimpleNeuralControllerNP():
+class SimpleNeuralControllerNumpy():
     def __init__(self, n_in, n_out, n_hidden_layers=2, n_neurons_per_hidden=5, params=None):
         self.dim_in = n_in
         self.dim_out = n_out
@@ -51,7 +51,7 @@ class SimpleNeuralControllerNP():
             for i in range(self.n_hidden_layers-1): # Hidden -> hidden
                 self.weights.append(np.random.random((self.n_per_hidden,self.n_per_hidden)))
                 self.bias.append(np.random.random(self.n_per_hidden))
-            self.weights.append(np.random.random((self.n_per_hidden,self.dim_out)) # -> last hidden -> out
+            self.weights.append(np.random.random((self.n_per_hidden,self.dim_out))) # -> last hidden -> out
             self.bias.append(np.random.random(self.dim_out))
         else:
             self.weights = [np.random.random((self.dim_in,self.dim_out))] # Single-layer perceptron
@@ -62,7 +62,7 @@ class SimpleNeuralControllerNP():
         """
         Returns all network parameters as a single array
         """
-        flat_weights = np.hstack([arr.flatten() for arr in (self.weights+self.bias])
+        flat_weights = np.hstack([arr.flatten() for arr in (self.weights+self.bias)])
         return flat_weights
 
     def set_parameters(self, flat_parameters):
@@ -93,17 +93,18 @@ class SimpleNeuralControllerNP():
             i += self.n_per_hidden
             for l in range(self.n_hidden_layers-1): # Hidden -> hidden
                 b = np.array(flat_parameters[i:(i+self.n_per_hidden)])
-                self.weights.append(b)
+                self.bias.append(b)
                 i += self.n_per_hidden
             # -> last hidden -> out
             bN = np.array(flat_parameters[i:(i+self.dim_out)])
-            self.weights.append(bN)
+            self.bias.append(bN)
             i += self.dim_out
         else:
             n_w = self.dim_in*self.dim_out
             w = np.array(flat_parameters[:n_w])
             self.weights = [w.reshape((self.dim_in,self.dim_out))]
             self.bias = [np.array(flat_parameters[n_w:])]
+        self.n_weights = np.sum([np.product(w.shape) for w in self.weights]) + np.sum([np.product(b.shape) for b in self.bias])
     
     def predict(self,x):
         """

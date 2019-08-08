@@ -128,7 +128,7 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 		pool=futures
 
 	dump_params(params,run_name)
-	pop, archive, logbook = NovES(eval_with_functor, params, pool, run_name)
+	pop, archive, logbook = NovES(eval_with_functor, params, pool, run_name, geno_type="dnn")
 	dump_pop(pop,nb_gen,run_name)
 	dump_logbook(logbook,nb_gen,run_name)
 	dump_archive(archive,nb_gen,run_name)

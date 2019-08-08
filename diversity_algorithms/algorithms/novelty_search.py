@@ -241,7 +241,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
 
 
-def NovES(evaluate,myparams,pool=None, run_name="runXXX"):
+def NovES(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
     """Novelty-based Mu plus lambda ES."""
 
     params={"IND_SIZE":1, 
@@ -272,33 +272,36 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX"):
          
     toolbox = base.Toolbox()
 
-#    # With fixed NN
-#    # -------------
-#    toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
-#    
-#    toolbox.register("individual", tools.initRepeat, creator.Individual,
-#                 toolbox.attr_float, n=params["IND_SIZE"])
-#    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-#    toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
-
-#    # Polynomial mutation with eta=15, and p=0.1 as for Leni
-#    toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["ETA_M"], indpb=params["INDPB"], low=params["MIN"], up=params["MAX"])
-
-
-    # With DNN
-    #---------
+    if(geno_type == "realarray"):
+        print("** Unsing fixed structure networks (MLP) parameterized by a real array **")
+        # With fixed NN
+        # -------------
+        toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
+        
+        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=params["IND_SIZE"])
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
     
-    toolbox.register("individual", initDNN, creator.Individual, in_size=params["GENO_N_IN"],out_size=params["GENO_N_OUT"])
-    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    toolbox.register("mate", mateDNNDummy, alpha=params["ALPHA"])
+        # Polynomial mutation with eta=15, and p=0.1 as for Leni
+        toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["ETA_M"], indpb=params["INDPB"], low=params["MIN"], up=params["MAX"])
+    
+    elif(geno_type == "dnn"):
+        print("** Unsing dymamic structure networks (DNN) **")
+        # With DNN (dynamic structure networks)
+        #---------
+        toolbox.register("individual", initDNN, creator.Individual, in_size=params["GENO_N_IN"],out_size=params["GENO_N_OUT"])
 
-    # Polynomial mutation with eta=15, and p=0.1 as for Leni
-    toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["DNN_MUT_PB_WB"], mutation_eta=params["DNN_MUT_ETA_WB"], mutation_rate_add_conn=params["DNN_MUT_PB_ADD_CONN"], mutation_rate_del_conn=params["DNN_MUT_PB_DEL_CONN"], mutation_rate_add_node=params["DNN_MUT_PB_ADD_NODE"], mutation_rate_del_node=params["DNN_MUT_PB_DEL_NODE"])
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        toolbox.register("mate", mateDNNDummy, alpha=params["ALPHA"])
     
-    
+        # Polynomial mutation with eta=15, and p=0.1 as for Leni
+        toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["DNN_MUT_PB_WB"], mutation_eta=params["DNN_MUT_ETA_WB"], mutation_rate_add_conn=params["DNN_MUT_PB_ADD_CONN"], mutation_rate_del_conn=params["DNN_MUT_PB_DEL_CONN"], mutation_rate_add_node=params["DNN_MUT_PB_ADD_NODE"], mutation_rate_del_node=params["DNN_MUT_PB_DEL_NODE"])
+    else:
+        raise RuntimeError("Unknown genotype type %s" % geno_type)
+    #Common elements - selection and evaluation
     toolbox.register("select", tools.selBest, fit_attr='novelty')
     toolbox.register("evaluate", evaluate)
-
+    
     # Parallelism
     if(pool):
         toolbox.register("map", pool.map)
