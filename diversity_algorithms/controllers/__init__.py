@@ -1,7 +1,11 @@
 # coding: utf-8
 
+#Keras controller
 #from diversity_algorithms.controllers.fixed_structure_nn import SimpleNeuralControllerKeras as SimpleNeuralController
+
+#Numpy controller
 from diversity_algorithms.controllers.fixed_structure_nn_numpy import SimpleNeuralControllerNumpy as SimpleNeuralController
+
 from diversity_algorithms.controllers.graph_tool_dnn import DNN, DNNController
 from diversity_algorithms.controllers.deap_tools_dnn import initDNN, mutDNN, mateDNNDummy
 
