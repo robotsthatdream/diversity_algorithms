@@ -20,7 +20,10 @@ def generate_exp_name(name=""):
     return run_name
 
 def dump_exp_details(argv,run_name):
+    print("Dumping exp details: "+" ".join(argv))
     gdir=os.path.dirname(argv[0])
+    if (gdir==""):
+        gdir="."
     r=subprocess.run(["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE, cwd=gdir)
     try:
         os.mkdir(run_name)
