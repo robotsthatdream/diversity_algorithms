@@ -1,6 +1,7 @@
 import numpy as np
 import datetime
 import os
+import subprocess
 import dill
 import pickle
 
@@ -18,6 +19,19 @@ def generate_exp_name(name=""):
             nb+=1
     return run_name
 
+def dump_exp_details(argv,run_name):
+    gdir=os.path.dirname(argv[0])
+    r=subprocess.run(["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE, cwd=gdir)
+    try:
+        os.mkdir(run_name)
+    except OSError:
+        pass
+    f=open(run_name+"/info.log","w")
+    f.write("## Features of the experiment ##\n")
+    f.write("Git hash: "+r.stdout.decode("utf-8"))
+    f.write("Command: "+" ".join(argv)+"\n")
+    f.close()
+    
 def dump_pop(pop, gen, run_name="runXXX"):
     out_dict = {"gen": gen, "size": len(pop)}
     for (i,ind) in enumerate(pop):

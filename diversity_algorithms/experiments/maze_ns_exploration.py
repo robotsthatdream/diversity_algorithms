@@ -2,7 +2,7 @@
 # coding: utf-8
 
 ## EA & pyMaze expriments - vanilla python version for SCOOP parallelism
-import sys,getopt
+import sys,getopt,subprocess
 import numpy as np
 
 from diversity_algorithms.environments import EvaluationFunctor
@@ -137,7 +137,7 @@ if(__name__=='__main__'):
 	evolvability_period=-1
 
 	run_name=generate_exp_name("")
-
+	dump_exp_details(sys.argv,run_name)
         
 	try:
                 opts, args = getopt.getopt(sys.argv[1:],"hp:g:e:P:",["pop_size=","nb_gen=", "evolvability_nb_samples=","evolvability_period="])
