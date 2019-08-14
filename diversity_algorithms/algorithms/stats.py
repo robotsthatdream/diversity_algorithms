@@ -10,10 +10,15 @@ class Perc:
     def __call__(self,l):
         return numpy.percentile(l,self.val)
 
+def get_fit_val(x):
+    return x.fitness.values
+
+def get_nov(x):
+    return x.novelty
 
 # fitness-based statistics
 def get_stats_fitness(prefix=""):
-    stats_fitness = tools.Statistics(key=lambda ind: ind.fitness.values)
+    stats_fitness = tools.Statistics(key=get_fit_val)
     
     stats_fitness.register(prefix+"fit_median", numpy.median)
     stats_fitness.register(prefix+"fit_std", numpy.std)
@@ -25,7 +30,7 @@ def get_stats_fitness(prefix=""):
 
 # novelty-based statistics
 def get_stats_novelty(prefix=""):
-    stats_novelty = tools.Statistics(key=lambda ind: ind.novelty)
+    stats_novelty = tools.Statistics(key=get_nov)
 
     stats_novelty.register(prefix+"nov_median", numpy.median)
     stats_novelty.register(prefix+"nov_std", numpy.std)
@@ -40,13 +45,8 @@ def get_stats_novelty(prefix=""):
 # Fitness + novelty
 def get_stats_fit_nov(prefix=""):
     mstats_fit_nov = tools.MultiStatistics(fitness=get_stats_fitness(prefix), novelty=get_stats_novelty(prefix))
-    mstats_fit_nov.register(prefix+"median", numpy.median)
-    mstats_fit_nov.register(prefix+"std", numpy.std)
-    mstats_fit_nov.register(prefix+"min", numpy.min)
-    mstats_fit_nov.register(prefix+"max", numpy.max)
-    mstats_fit_nov.register(prefix+"perc25", Perc(25))
-    mstats_fit_nov.register(prefix+"perc75", Perc(75))
     return mstats_fit_nov
+
 ### Statistics on the coverage
 
 ## Useful functions
@@ -137,3 +137,11 @@ def get_stat_coverage(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bi
         
     return stat_coverage
 
+# Fitness + novelty + coverage
+def get_stats_fit_nov_cov(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bin=None, gen_window_global=10):
+    args={prefix+"fitness": get_stats_fitness(prefix),
+          prefix+"novelty": get_stats_novelty(prefix),
+          prefix+"coverage": get_stat_coverage(grid,prefix=prefix, indiv=indiv, min_x=min_x, max_x=max_x, nb_bin=nb_bin, gen_window_global=gen_window_global)
+    }
+    mstats_fit_nov_cov = tools.MultiStatistics(**args)
+    return mstats_fit_nov_cov
