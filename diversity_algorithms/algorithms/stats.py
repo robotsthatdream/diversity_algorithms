@@ -137,11 +137,20 @@ def get_stat_coverage(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bi
         
     return stat_coverage
 
+# Stat on values obtained from an accessor function
+def get_stats_generic(value_accessor,x):
+    val=[value_accessor(ind) for ind in x]
+    return numpy.median(val), numpy.std(val), numpy.min(val), numpy.max(val), Perc(25)(val), Perc(75)(val)
+
 # Fitness + novelty + coverage
-def get_stats_fit_nov_cov(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bin=None, gen_window_global=10):
-    args={prefix+"fitness": get_stats_fitness(prefix),
-          prefix+"novelty": get_stats_novelty(prefix),
-          prefix+"coverage": get_stat_coverage(grid,prefix=prefix, indiv=indiv, min_x=min_x, max_x=max_x, nb_bin=nb_bin, gen_window_global=gen_window_global)
-    }
-    mstats_fit_nov_cov = tools.MultiStatistics(**args)
-    return mstats_fit_nov_cov
+def get_stat_fit_nov_cov(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bin=None, gen_window_global=10):
+    stat_fnc = tools.Statistics()
+    lbd_global=[]
+    stat_fnc.register(prefix+"fitness",get_stats_generic, get_fit_val)
+    stat_fnc.register(prefix+"novelty",get_stats_generic, get_nov)
+    
+    stat_fnc.register(prefix+"glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window=gen_window_global)
+    if (indiv):
+        stat_fnc.register(prefix+"indiv_cov",get_indiv_coverage,min_x=min_x, max_x=max_x, nb_bin=nb_bin)
+
+    return stat_fnc
