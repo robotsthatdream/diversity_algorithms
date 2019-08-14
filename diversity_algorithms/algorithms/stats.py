@@ -66,7 +66,7 @@ def get_updated_coverage(grid,lbd,x,min_x=None, max_x=None, gen_window=10):
         while(len(lbd)>gen_window):
             grid_to_remove=np.zeros(np.shape(grid))
             update_grid(grid_to_remove,min_x, max_x,lbd[0])
-            grid=grid-grid_to_remove
+            grid-=grid_to_remove
             lbd.pop(0)
     update_grid(grid,min_x, max_x,bdx)
 
