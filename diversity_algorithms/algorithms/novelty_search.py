@@ -107,7 +107,7 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
 
 ## DEAP compatible algorithm
 def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy,lambdaNov,
-                          stats=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX"):
+                          stats=None, stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX"):
     """Novelty Search algorithm
  
     Novelty Search algorithm. Parameters:
@@ -121,7 +121,8 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     :param k: the number of neighbors to take into account while computing novelty
     :param add_strategy: the archive update strategy (can be "random" or "novel")
     :param lambdaNov: the number of individuals to add to the archive at a given generation
-    :param stats: the statistic to use
+    :param stats: the statistic to use (on the population, i.e. survivors from parent+offspring)
+    :param stats_offspring: the statistic to use (on the set of offspring)
     :param halloffame: the halloffame
     :param dump_period_bd: the period for dumping behavior descriptors
     :param dump_period_pop: the period for dumping the current population
@@ -136,7 +137,11 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     print("     lambda=%d, mu=%d, cxpb=%.2f, mutpb=%.2f, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,cxpb,mutpb,ngen,k,lambdaNov))
 
     logbook = tools.Logbook()
-    logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
+    logbook.header = ['gen', 'nevals']
+    if (stats is not None):
+        logbook.header += stats.fields
+    if (stats_offspring is not None):
+        logbook.header += stats_offspring.fields
 
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
@@ -157,8 +162,10 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
             print(".", end='', flush=True)
             ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
         print("")
+
     record = stats.compile(population) if stats is not None else {}
-    logbook.record(gen=0, nevals=len(invalid_ind), **record)
+    record_offspring = stats_offspring.compile(population) if stats_offspring is not None else {}
+    logbook.record(gen=0, nevals=len(invalid_ind), **record, **record_offspring)
     if verbose:
         print(logbook.stream)
 
@@ -169,6 +176,10 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
     
     if dump_period_bd:
+        dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
+        for ind in population:
+            dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
+        dump_bd.close()
         dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
         for ind in population:
             dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
@@ -228,7 +239,8 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         
         # Update the statistics with the new population
         record = stats.compile(population) if stats is not None else {}
-        logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+        record_offspring = stats_offspring.compile(offspring) if stats_offspring is not None else {}
+        logbook.record(gen=gen, nevals=len(invalid_ind), **record, **record_offspring)
         if verbose:
             print(logbook.stream)
 
@@ -249,6 +261,7 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray")
             "MUTPB":0.5, # probability to mutate an individual
             "NGEN":1000, # number of generations
             "STATS":None, # Statistics
+            "STATS_OFFSPRING":None, # Statistics on offspring
             "MIN": 0, # Min of genotype values
             "MAX": 1, # Max of genotype values
             "MU": 20, # Number of individuals selected at each generation
@@ -309,7 +322,7 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray")
 
     pop = toolbox.population(n=params["MU"])
     
-    rpop, archive, logbook = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name)
+    rpop, archive, logbook = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], stats_offspring=params["STATS_OFFSPRING"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name)
         
     return rpop, archive, logbook
   

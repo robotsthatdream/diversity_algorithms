@@ -76,15 +76,20 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 	max_x=[600,600]
 	nb_bin=50
 	grid=build_grid(min_x, max_x, nb_bin)
+	grid_offspring=build_grid(min_x, max_x, nb_bin)
 	stats=None
+	stats_offspring=None
 	nbc=nb_bin**2
 	nbs=nbc*2 # min 2 samples per bin
 	evolvability_nb_samples=nbs
 	window_global=nbs/pop_size
 	if (evolvability_period>0) and (evolvability_nb_samples>0):
-		stats=get_stat_coverage(grid,indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
+		stats=get_stat_coverage(grid,prefix="population_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
+		stats_offspring=get_stat_coverage(grid_offspring,prefix="offspring_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
 	else:
-		stats=get_stat_coverage(grid,indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
+		stats=get_stat_coverage(grid,prefix="population_",indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
+		stats_offspring=get_stat_coverage(grid_offspring,prefix="offspring_", indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
+
 
 	params={"GENO_N_IN":eval_dist_maze.controller.n_in, 
 		"GENO_N_OUT":eval_dist_maze.controller.n_out, 
@@ -103,6 +108,7 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 		# --------------
 		"NGEN":nb_gen, # Number of generations
 		"STATS":stats, # Statistics
+		"STATS_OFFSPRING":stats_offspring, # Statistics on offspring
 		"MIN": -5, # Seems reasonable for NN weights
 		"MAX": 5, # Seems reasonable for NN weights
 		"MU": pop_size,

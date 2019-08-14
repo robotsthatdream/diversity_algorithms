@@ -47,10 +47,10 @@ def dump_params(params, run_name="runXXX"):
         os.mkdir(run_name)
     except OSError:
         pass
-    stat=params["STATS"]
-    params["STATS"]=None # pickle can't save some parts of the stat
+    #stat=params["STATS"]
+    #params["STATS"]=None # pickle can't save some parts of the stat
     np.savez(run_name+"/params.npz", **params) 
-    params["STATS"]=stat
+    #params["STATS"]=stat
 
 def dump_logbook(logbook,gen,run_name="runXXX"):
     out_dict = {}

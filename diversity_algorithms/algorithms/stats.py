@@ -12,36 +12,41 @@ class Perc:
 
 
 # fitness-based statistics
-stats_fitness = tools.Statistics(key=lambda ind: ind.fitness.values)
+def get_stats_fitness(prefix=""):
+    stats_fitness = tools.Statistics(key=lambda ind: ind.fitness.values)
     
-stats_fitness.register("median", numpy.median)
-stats_fitness.register("std", numpy.std)
-stats_fitness.register("min", numpy.min)
-stats_fitness.register("max", numpy.max)
-stats_fitness.register("perc25", Perc(25))
-stats_fitness.register("perc75", Perc(75))
+    stats_fitness.register(prefix+"fit_median", numpy.median)
+    stats_fitness.register(prefix+"fit_std", numpy.std)
+    stats_fitness.register(prefix+"fit_min", numpy.min)
+    stats_fitness.register(prefix+"fit_max", numpy.max)
+    stats_fitness.register(prefix+"fit_perc25", Perc(25))
+    stats_fitness.register(prefix+"fit_perc75", Perc(75))
+    return stats_fitness
 
 # novelty-based statistics
-stats_novelty = tools.Statistics(key=lambda ind: ind.fitness.novelty)
-    
-stats_novelty.register("median", numpy.median)
-stats_novelty.register("std", numpy.std)
-stats_novelty.register("min", numpy.min)
-stats_novelty.register("max", numpy.max)
-stats_novelty.register("perc25", Perc(25))
-stats_novelty.register("perc75", Perc(75))
+def get_stats_novelty(prefix=""):
+    stats_novelty = tools.Statistics(key=lambda ind: ind.novelty)
+
+    stats_novelty.register(prefix+"nov_median", numpy.median)
+    stats_novelty.register(prefix+"nov_std", numpy.std)
+    stats_novelty.register(prefix+"nov_min", numpy.min)
+    stats_novelty.register(prefix+"nov_max", numpy.max)
+    stats_novelty.register(prefix+"nov_perc25", Perc(25))
+    stats_novelty.register(prefix+"nov_perc75", Perc(75))
+    return stats_novelty
 
 # Multi stats (compute several statistical values during the same compile call)
 
 # Fitness + novelty
-mstats_fit_nov = tools.MultiStatistics(fitness=stats_fitness, novelty=stats_novelty)
-mstats_fit_nov.register("median", numpy.median)
-mstats_fit_nov.register("std", numpy.std)
-mstats_fit_nov.register("min", numpy.min)
-mstats_fit_nov.register("max", numpy.max)
-mstats_fit_nov.register("perc25", Perc(25))
-mstats_fit_nov.register("perc75", Perc(75))
-
+def get_stats_fit_nov(prefix=""):
+    mstats_fit_nov = tools.MultiStatistics(fitness=get_stats_fitness(prefix), novelty=get_stats_novelty(prefix))
+    mstats_fit_nov.register(prefix+"median", numpy.median)
+    mstats_fit_nov.register(prefix+"std", numpy.std)
+    mstats_fit_nov.register(prefix+"min", numpy.min)
+    mstats_fit_nov.register(prefix+"max", numpy.max)
+    mstats_fit_nov.register(prefix+"perc25", Perc(25))
+    mstats_fit_nov.register(prefix+"perc75", Perc(75))
+    return mstats_fit_nov
 ### Statistics on the coverage
 
 ## Useful functions
@@ -64,12 +69,12 @@ def get_updated_coverage(grid,lbd,x,min_x=None, max_x=None, gen_window=10):
         if(len(lbd)<gen_window):
             ready=False
         while(len(lbd)>gen_window):
-            grid_to_remove=np.zeros(np.shape(grid))
+            grid_to_remove=np.zeros(np.shape(grid),dtype=np.int)
             update_grid(grid_to_remove,min_x, max_x,lbd[0])
-            grid=grid-grid_to_remove
+            grid-=grid_to_remove
             lbd.pop(0)
     update_grid(grid,min_x, max_x,bdx)
-
+    
     if ready:
         return coverage(grid),jensen_shannon_distance(grid,generate_uniform_grid(grid))
     else:
@@ -113,8 +118,7 @@ def get_indiv_coverage(x, min_x=None, max_x=None,nb_bin=None):
     return icov,specialization
 
 
-
-def get_stat_coverage(grid, indiv=False, min_x=None, max_x=None,nb_bin=None, gen_window_global=10):
+def get_stat_coverage(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bin=None, gen_window_global=10):
     """Create a stat on the coverage
 
     Create a stat on the coverage:
@@ -125,11 +129,11 @@ def get_stat_coverage(grid, indiv=False, min_x=None, max_x=None,nb_bin=None, gen
     :param nb_bin: the number of bins
     :param gen_window_global: the size of the window of generations to take into account for the estimation of the coverage, minimal suggested value: nbcells/pop_size, so that there is at least one point per cell (otherwise, the estimation won't be significant) 
     """
-    stat_coverage = tools.Statistics(key=lambda ind: ind)
+    stat_coverage = tools.Statistics()
     lbd_global=[]
-    stat_coverage.register("glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window=gen_window_global)
+    stat_coverage.register(prefix+"glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window=gen_window_global)
     if (indiv):
-        stat_coverage.register("indiv_cov",get_indiv_coverage,min_x=min_x, max_x=max_x, nb_bin=nb_bin)
+        stat_coverage.register(prefix+"indiv_cov",get_indiv_coverage,min_x=min_x, max_x=max_x, nb_bin=nb_bin)
         
     return stat_coverage
 
