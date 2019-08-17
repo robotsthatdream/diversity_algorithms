@@ -154,13 +154,21 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
     archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
 
+    gen=0    
+
     # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
     if (evolvability_nb_samples>0) and (evolvability_period>0):
         print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
         print("sampling for evolvability: ",end='', flush=True)
+        ig=0
         for ind in population:
             print(".", end='', flush=True)
             ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
+            dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
+            for inde in ind.evolvability_samples:
+                dump_bd_evol.write(" ".join(map(str,inde.fitness.bd))+"\n")
+            dump_bd_evol.close()
+            ig+=1
         print("")
 
     record = stats.compile(population) if stats is not None else {}
@@ -170,9 +178,8 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         print(logbook.stream)
 
     for ind in population:
-        ind.evolvability_samples=None
+        ind.evolvability_samples=None # To avoid memory to inflate too much...
         
-    gen=0    
 
     
     if dump_period_bd:
@@ -231,10 +238,16 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         
         # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
         if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period == 0):
-            print("sampling for evolvability: ",end="", flush=True)
+            print("Sampling for evolvability: ",end="", flush=True)
+            ig=0
             for ind in population:
                 print(".", end='', flush=True)
                 ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
+                dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
+                for inde in ind.evolvability_samples:
+                    dump_bd_evol.write(" ".join(map(str,inde.fitness.bd))+"\n")
+                dump_bd_evol.close()
+                ig+=1
             print("")
         
         # Update the statistics with the new population
