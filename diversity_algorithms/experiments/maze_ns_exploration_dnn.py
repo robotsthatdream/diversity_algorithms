@@ -82,13 +82,6 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 	nbc=nb_bin**2
 	nbs=nbc*2 # min 2 samples per bin
 	evolvability_nb_samples=nbs
-	window_global=nbs/pop_size
-	if (evolvability_period>0) and (evolvability_nb_samples>0):
-		stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
-		stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
-	else:
-		stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
-		stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_", indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_global)
 
 	params={"GENO_N_IN":eval_dist_maze.controller.n_in, 
 		"GENO_N_OUT":eval_dist_maze.controller.n_out, 
@@ -106,8 +99,6 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 		"DNN_MUT_PB_DEL_CONN": 0.01, # Probability to remove a connection
 		# --------------
 		"NGEN":nb_gen, # Number of generations
-		"STATS":stats, # Statistics
-		"STATS_OFFSPRING":stats_offspring, # Statistics on offspring
 		"MIN": -5, # Seems reasonable for NN weights
 		"MAX": 5, # Seems reasonable for NN weights
 		"MU": pop_size,
@@ -121,10 +112,26 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
                 "DUMP_PERIOD_BD": dump_period_bd,
                 "MIN_X": min_x, # not used by NS. It is just to keep track of it in the saved param file
                 "MAX_X": max_x, # not used by NS. It is just to keep track of it in the saved param file
-                "NB_BIN":nb_bin, # not used by NS. It is just to keep track of it in the saved param file
-                "GLOBAL_WINDOW_SIZE": window_global
+                "NB_BIN":nb_bin # not used by NS. It is just to keep track of it in the saved param file
 	}
-	
+
+	# We use a different window size to compute statistics in order to have the same number of points for population and offspring statistics
+	window_population=nbs/params["MU"]
+	window_offspring=nbs/params["LAMBDA"]
+        
+	if (evolvability_period>0) and (evolvability_nb_samples>0):
+		stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_population)
+		stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_offspring)
+	else:
+		stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_population)
+		stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_", indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_offspring)
+
+	params["STATS"] = stats # Statistics
+	params["STATS_OFFSPRING"] = stats_offspring # Statistics on offspring
+	params["WINDOW_POPULATION"]=window_population
+	params["WINDOW_OFFSPRING"]=window_offspring
+        
+        
 	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
 	if (evolvability_period>0) and (evolvability_nb_samples>0):
                 print("WARNING, evolvability_nb_samples>0. The run will last much longer...")
