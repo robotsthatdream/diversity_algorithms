@@ -19,6 +19,7 @@ from deap import tools, base, algorithms
 
 from diversity_algorithms.algorithms.utils import *
 from diversity_algorithms.analysis.population_analysis import *
+from diversity_algorithms.analysis.data_utils import *
 
 # ### Novelty-based Evolution Strategies
 
@@ -150,7 +151,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit[0]
-        ind.fitness.bd = fit[1]
+        ind.fitness.bd = listify(fit[1])
 
     archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
 
@@ -205,7 +206,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit[0] 
-            ind.fitness.bd = fit[1]
+            ind.fitness.bd = listify(fit[1])
 
         pq=population+offspring
 

@@ -1,5 +1,5 @@
 # coding: utf-8
 
-from diversity_algorithms.environments.maze_fastsim import EvaluationFunctor
+from diversity_algorithms.environments.gym_env import EvaluationFunctor
 
-__all__=["maze_fastsim"]
+__all__=["gym_env"]

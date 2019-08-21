@@ -5,6 +5,8 @@
 import sys,getopt
 import numpy as np
 
+import gym, gym_fastsim
+
 from diversity_algorithms.environments import EvaluationFunctor
 from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
@@ -35,7 +37,15 @@ from diversity_algorithms.algorithms.utils import *
 #creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
 #creator.create("Strategy", list, typecode="d")
 
+def maze_behavior_descriptor(traj):
+        """
+        Computes the behavior descriptor from a trajectorty.
 
+        Computes the behavior descriptor from a trajectory. A trajectory is a list of tuples (obs,reward,end,info)  (depends on the environment, see gym_env.py). For the maze, we output the last robot position (x,y only, we discard theta).
+        """
+        last_step_data=traj[-1]
+        last_info=last_step_data[3]
+        return last_info['robot_pos'][:2]
 
 with_scoop=True
 
@@ -46,7 +56,7 @@ if with_scoop:
 # Each worker gets a functor
 nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
 #env, controller = generate_gym_env_and_controller(params=nnparams)
-eval_dist_maze = EvaluationFunctor(controller_type=SimpleNeuralController,controller_params=nnparams,with_behavior_descriptor=True)
+eval_dist_maze = EvaluationFunctor(env_name='FastsimSimpleNavigation-v0',controller_type=SimpleNeuralController,controller_params=nnparams,get_behavior_descriptor=maze_behavior_descriptor)
 
 # DO NOT pass the functor directly to futures.map -- this creates memory leaks
 # Wrapper that evals with the local functor

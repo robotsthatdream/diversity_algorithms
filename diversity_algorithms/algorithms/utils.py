@@ -7,7 +7,11 @@ import pickle
 
 def generate_exp_name(name=""):
     d=datetime.datetime.today()
-    run_name=d.strftime(name+"%Y_%m_%d-%H:%M:%S")
+    if(name!=""):
+        sep="_"
+    else:
+        sep=""
+    run_name=d.strftime(name+sep+"%Y_%m_%d-%H:%M:%S")
     nb=0
     not_created=True
     while(not_created):
@@ -33,7 +37,21 @@ def dump_exp_details(argv,run_name):
     f.write("## Features of the experiment ##\n")
     f.write("Git hash: "+r.stdout.decode("utf-8"))
     f.write("Command: "+" ".join(argv)+"\n")
+
+    d=datetime.datetime.today()
+    sd=d.strftime("<%Y_%m_%d-%H:%M:%S>")
+
+    f.write("++ Started at: "+sd+"\n")
     f.close()
+
+def dump_end_of_exp(run_name):
+    f=open(run_name+"/info.log","a")
+    d=datetime.datetime.today()
+    sd=d.strftime("<%Y_%m_%d-%H:%M:%S>")
+
+    f.write("-- Ended at: "+sd+"\n")
+    f.close()
+
     
 def dump_pop(pop, gen, run_name="runXXX"):
     out_dict = {"gen": gen, "size": len(pop)}
@@ -41,8 +59,10 @@ def dump_pop(pop, gen, run_name="runXXX"):
         out_dict["geno_%d" % i] = np.array(ind)
         if(ind.fitness.valid):
             out_dict["fitness_%d" % i] = ind.fitness.values
-            out_dict["novelty_%d" % i] = ind.novelty
-            out_dict["bd_%d" % i] = ind.fitness.bd
+            if(hasattr(ind,'novelty')):
+                out_dict["novelty_%d" % i] = ind.novelty
+            if(hasattr(ind.fitness,'bd')):
+                out_dict["bd_%d" % i] = ind.fitness.bd
     try:
         os.mkdir(run_name)
     except OSError:
