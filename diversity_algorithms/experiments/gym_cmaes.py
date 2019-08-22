@@ -87,8 +87,8 @@ def launch_cmaes(pop_size, nb_gen):
         
 	return pop, logbook
 
-pop_size=None
-nb_gen=None
+pop_size=100
+nb_gen=1000
 
         
 try:
