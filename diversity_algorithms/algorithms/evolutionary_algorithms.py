@@ -162,11 +162,12 @@ def checkStrategyMinMax(minstrategy,maxstrategy):
 #from joblib_hack import mymap
 
 
-def ES(evaluate,myparams,pool=None):
+def ES(evaluate,myparams,pool=None, run_name="runXXX"):
     """Mu plus lambda ES."""
     
     params={"IND_SIZE":1, 
-            "POP_SIZE":100,
+            "MU":100,
+            "LAMBDA":200,
             "CXPB":1,
             "MUTPB":1,
             "NGEN":1000,
@@ -187,7 +188,10 @@ def ES(evaluate,myparams,pool=None):
     
     for key in myparams.keys():
         params[key]=myparams[key]
-    
+
+    if ("MU" in myparams.keys) and ("LAMBDA" not in myparams.keys()):
+        params["LAMBDA"]=int(2*params["MU"])
+        
     toolbox = base.Toolbox()
     toolbox.register("individual", generateES, creator.Individual, creator.Strategy,
         params["IND_SIZE"], params["MIN"], params["MAX"], params["MIN_STRATEGY"], params["MAX_STRATEGY"])
