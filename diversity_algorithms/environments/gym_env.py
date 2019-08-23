@@ -9,6 +9,7 @@ import time
 #import resource
 
 from diversity_algorithms.controllers import SimpleNeuralController, DNNController
+from diversity_algorithms.algorithms import bd_funcs
 
 # Fitness/evaluation function
 
@@ -16,29 +17,32 @@ default_max_step = 2000 # same as C++ sferes experiments
 
 
 class EvaluationFunctor:
-	def __init__(self, env=None, env_name=None, controller=None, controller_type=None, controller_params=None, output='total_reward',max_step=default_max_step, get_behavior_descriptor=None):
+	def __init__(self, env=None, env_name=None, controller=None, controller_type=None, controller_params=None, output='total_reward',max_step=default_max_step, get_behavior_descriptor='auto'):
 		global current_serial
 		print("Eval functor created")
 		#Env
 		#Controller
 		self.out = output
 		self.max_step = max_step
-		self.get_behavior_descriptor = get_behavior_descriptor
 		self.evals = 0
 		self.traj=None
 		self.controller=controller
 		self.controller_type=controller_type
 		self.controller_params=controller_params
 		if ((env is not None) or (env_name is not None)):
-                        self.set_env(env,env_name)
-                
-	def set_env(self,env, env_name):
+			self.set_env(env,env_name, (get_behavior_descriptor == 'auto'))
+		else:
+			self.env = None
+		if(get_behavior_descriptor != 'auto' and get_behavior_descriptor is not None): #Use provided function
+			self.get_behavior_descriptor = get_behavior_descriptor
+		
+	def set_env(self,env, env_name, with_bd=False):
 		if(env is None):
 			self.env = gym.make(env_name)
 			self.env.reset()
 		else:
 			self.env = env
-                
+		self.env_name = self.env.unwrapped.spec.id
 		if(self.controller is None): # Build controller
 			if(self.controller_type is None):
 				raise RuntimeError("Please either give a controller or specify controller type")
@@ -46,12 +50,18 @@ class EvaluationFunctor:
 		else:
 			if(self.controller_type is not None or self.controller_params is not None):
 				print("WARNING: EvaluationFunctor built with both controller and controller_type/controller_params. controller_type/controller_params arguments  will be ignored")
+		if(with_bd):
+			if(self.env_name not in bd_funcs):
+				print("WARNING: No BD extraction function known for Gym environment %s." % self.env_name)
+				self.get_behavior_descriptor = None
+			else:
+				self.get_behavior_descriptor = bd_funcs[self.env_name]
 
 
-                
+
 	def load_indiv(self, genotype):
 		if(self.controller is None):
-                        print("ERROR: controller is None")
+			print("ERROR: controller is None")
 		self.controller.set_parameters(genotype)
 	
 	
@@ -111,7 +121,7 @@ class EvaluationFunctor:
 		elif(self.out==None or self.out=='none'):
 			fitness = [None]
 		elif(self.out in info.keys):
-                        fitness = listify(info[self.out])
+			fitness = listify(info[self.out])
 		else:
 			print("ERROR: No known output %s" % output)
 			return None
@@ -120,8 +130,8 @@ class EvaluationFunctor:
 			self.traj=None # to avoid taking too much memory
 			return fitness
 		else:
-                        bd = self.get_behavior_descriptor(self.traj)
-                        self.traj=None # to avoid taking too much memory
-                        return [fitness,bd]
+			bd = self.get_behavior_descriptor(self.traj)
+			self.traj=None # to avoid taking too much memory
+			return [fitness,bd]
 
 
