@@ -12,6 +12,8 @@ from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
 from diversity_algorithms.algorithms.stats import * 
 
+from diversity_algorithms.algorithms import grid_features
+
 from deap import creator, base
 
 import dill
@@ -54,7 +56,7 @@ def eval_with_functor(g):
 
 
 
-def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1):
+def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1):
 	"""Launch a novelty search run on the maze
 	
 	Launch a novelty search run on the maze:
@@ -67,9 +69,13 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 
 	WARNING: the evolvability requires to generate and evaluate pop_size*evolvability_nb_samples just for statistics purposes, it will significantly slow down the process.
 	"""
-	min_x=[0,0]
-	max_x=[600,600]
-	nb_bin=50
+	if (env_name not in grid_features.keys()):
+                print("You need to define the features of the grid to be used to track behavior descriptor coverage in algorithms/__init__.py")
+                return None, None
+
+	min_x=grid_features[env_name]["min_x"]
+	max_x=grid_features[env_name]["max_x"]
+	nb_bin=grid_features[env_name]["nb_bin"]
 
 	grid=build_grid(min_x, max_x, nb_bin)
 	grid_offspring=build_grid(min_x, max_x, nb_bin)
@@ -185,7 +191,7 @@ if(__name__=='__main__'):
 	print("Saving logs in "+run_name)
 	dump_exp_details(sys.argv,run_name)
 
-	pop, logbook = launch_nov(pop_size, nb_gen, evolvability_period, dump_period_pop, dump_period_bd)
+	pop, logbook = launch_nov(env_name, pop_size, nb_gen, evolvability_period, dump_period_pop, dump_period_bd)
 
 	
 	dump_end_of_exp(run_name)
