@@ -16,6 +16,12 @@ def get_fit_val(x):
 def get_nov(x):
     return x.novelty
 
+def get_bd_dist_to_parent(x):
+    if (x.parent_bd is None):
+        return 0
+    else:
+        return np.linalg.norm(np.array(x.parent_bd)-np.array(x.bd))
+
 # fitness-based statistics
 def get_stats_fitness(prefix=""):
     stats_fitness = tools.Statistics(key=get_fit_val)
@@ -142,12 +148,14 @@ def get_stats_generic(value_accessor,x):
     val=[value_accessor(ind) for ind in x]
     return numpy.median(val), numpy.std(val), numpy.min(val), numpy.max(val), Perc(25)(val), Perc(75)(val)
 
+
 # Fitness + novelty + coverage
 def get_stat_fit_nov_cov(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bin=None, gen_window_global=10):
     stat_fnc = tools.Statistics()
     lbd_global=[]
     stat_fnc.register(prefix+"fitness",get_stats_generic, get_fit_val)
     stat_fnc.register(prefix+"novelty",get_stats_generic, get_nov)
+    stat_fnc.register(prefix+"bd_dist_to_parent",get_stats_generic, get_bd_dist_to_parent)
     
     stat_fnc.register(prefix+"glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window=gen_window_global)
     if (indiv):
