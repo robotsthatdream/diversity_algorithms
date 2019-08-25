@@ -234,10 +234,6 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
                 dump_bd.write(" ".join(map(str,ind.bd))+"\n")
             dump_bd.close()
 
-        if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump population
-            dump_pop(pq, gen,run_name)
-            dump_archive(archive, gen,run_name)
-            dump_logbook(logbook, gen,run_name)
 
         print("Gen %d"%(gen))
 
@@ -245,6 +241,13 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         # Select the next generation population
         population[:] = toolbox.select(pq, mu)        
 
+        if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump population
+            dump_pop(pq, gen,run_name,"offspring")
+            dump_pop(population, gen,run_name)
+            dump_archive(archive, gen,run_name)
+            dump_logbook(logbook, gen,run_name)
+
+        
         if(dump_period_bd and(gen % dump_period_bd == 0)): # Dump behavior descriptors
             dump_bd=open(run_name+"/bd_pop_%04d.log"%gen,"w")
             for ind in population:

@@ -53,7 +53,7 @@ def dump_end_of_exp(run_name):
     f.close()
 
     
-def dump_pop(pop, gen, run_name="runXXX"):
+def dump_pop(pop, gen, run_name="runXXX", prefix="pop"):
     out_dict = {"gen": gen, "size": len(pop)}
     for (i,ind) in enumerate(pop):
         out_dict["geno_%d" % i] = np.array(ind)
@@ -72,7 +72,7 @@ def dump_pop(pop, gen, run_name="runXXX"):
         os.mkdir(run_name)
     except OSError:
         pass
-    np.savez(run_name+"/pop_gen%d.npz" % gen, **out_dict) 
+    np.savez(run_name+"/"+prefix+"_gen%d.npz" % gen, **out_dict) 
 
 def dump_archive(archive, gen, run_name="runXXX"):
     out_dict = {"gen": gen, "size": archive.size()}
