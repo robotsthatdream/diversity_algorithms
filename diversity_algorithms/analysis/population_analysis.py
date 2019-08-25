@@ -110,7 +110,7 @@ def sample_from_pop(population, toolbox, lambda_, cxpb, mutpb):
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit[0] 
-        ind.fitness.bd = fit[1]
+        ind.bd = fit[1]
         ind.evolvability_samples=None # SD: required, otherwise, the memory usage explodes... I do not understand why yet.
         
     return offspring

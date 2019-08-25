@@ -61,8 +61,8 @@ def dump_pop(pop, gen, run_name="runXXX"):
             out_dict["fitness_%d" % i] = ind.fitness.values
             if(hasattr(ind,'novelty')):
                 out_dict["novelty_%d" % i] = ind.novelty
-            if(hasattr(ind.fitness,'bd')):
-                out_dict["bd_%d" % i] = ind.fitness.bd
+            if(hasattr(ind,'bd')):
+                out_dict["bd_%d" % i] = ind.bd
     try:
         os.mkdir(run_name)
     except OSError:

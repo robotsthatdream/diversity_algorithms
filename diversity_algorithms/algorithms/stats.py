@@ -68,7 +68,7 @@ def get_updated_coverage(grid,lbd,x,min_x=None, max_x=None, gen_window=10):
     :param gen_window: the number of generations to take into account (the last gen_window are taken into account)
     :returns: the coverage and the jensen-shannon distance to a uniform distribution, or (None, None) is there are not enough generations
     """
-    bdx=[ind.fitness.bd for ind in x]
+    bdx=[ind.bd for ind in x]
     ready=True
     if(gen_window>0):
         lbd.append(bdx)

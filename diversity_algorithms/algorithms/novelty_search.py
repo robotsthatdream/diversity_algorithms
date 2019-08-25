@@ -69,7 +69,7 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
        if (verbose):
            print("Update Novelty. Archive size=%d"%(archive.size())) 
        for ind in population:
-           ind.novelty=archive.get_nov(ind.fitness.bd, population)
+           ind.novelty=archive.get_nov(ind.bd, population)
    else:
        if (verbose):
            print("Update Novelty. Initial step...") 
@@ -92,15 +92,15 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
        random.shuffle(l)
        if (verbose):
            print("Random archive update. Adding offspring: "+str(l[:_lambda])) 
-       lbd=[offspring[l[i]].fitness.bd for i in range(_lambda)]
+       lbd=[offspring[l[i]].bd for i in range(_lambda)]
    elif(add_strategy=="novel"):
        soff=sorted(offspring,lambda x:x.novelty)
        ilast=len(offspring)-_lambda
-       lbd=[soff[i].fitness.bd for i in range(ilast,len(soff))]
+       lbd=[soff[i].bd for i in range(ilast,len(soff))]
        if (verbose):
            print("Novel archive update. Adding offspring: ")
            for offs in soff[iLast:len(soff)]:
-               print("    nov="+str(offs.novelty)+" fit="+str(offs.fitness.values)+" bd="+str(offs.fitness.bd))
+               print("    nov="+str(offs.novelty)+" fit="+str(offs.fitness.values)+" bd="+str(offs.bd))
    else:
        print("ERROR: updateNovelty: unknown add strategy(%s), valid alternatives are \"random\" and \"novel\""%(add_strategy))
        return None
@@ -158,8 +158,6 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
 
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit[0]
-        ind.fitness.parent_bd=None
-        ind.fitness.bd = listify(fit[1])
         ind.parent_bd=None
         ind.bd=listify(fit[1])
         
@@ -177,7 +175,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
             ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
             dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
             for inde in ind.evolvability_samples:
-                dump_bd_evol.write(" ".join(map(str,inde.fitness.bd))+"\n")
+                dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")
             dump_bd_evol.close()
             ig+=1
         print("")
@@ -196,11 +194,11 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     if dump_period_bd:
         dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
         for ind in population:
-            dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
+            dump_bd.write(" ".join(map(str,ind.bd))+"\n")
         dump_bd.close()
         dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
         for ind in population:
-            dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
+            dump_bd.write(" ".join(map(str,ind.bd))+"\n")
         dump_bd.close()
     
     if dump_period_pop:
@@ -216,8 +214,6 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit[0] 
-            #ind.fitness.parent_bd = ind.fitness.bd
-            ind.fitness.bd = listify(fit[1])
             ind.parent_bd=ind.bd
             ind.bd=listify(fit[1])
 
@@ -229,7 +225,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         if(dump_period_bd and(gen % dump_period_bd == 0)): # Dump behavior descriptors
             dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
             for ind in offspring:
-                dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
+                dump_bd.write(" ".join(map(str,ind.bd))+"\n")
             dump_bd.close()
 
         if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump population
@@ -246,7 +242,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         if(dump_period_bd and(gen % dump_period_bd == 0)): # Dump behavior descriptors
             dump_bd=open(run_name+"/bd_pop_%04d.log"%gen,"w")
             for ind in population:
-                dump_bd.write(" ".join(map(str,ind.fitness.bd))+"\n")
+                dump_bd.write(" ".join(map(str,ind.bd))+"\n")
             dump_bd.close()
 
         
@@ -259,7 +255,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
                 ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
                 dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
                 for inde in ind.evolvability_samples:
-                    dump_bd_evol.write(" ".join(map(str,inde.fitness.bd))+"\n")
+                    dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")
                 dump_bd_evol.close()
                 ig+=1
             print("")
