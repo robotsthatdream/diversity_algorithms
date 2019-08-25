@@ -2,6 +2,7 @@ from deap import tools
 import numpy
 import sys
 from diversity_algorithms.analysis.population_analysis import *
+from math import log
 
 # useful classes
 class Perc:
@@ -72,7 +73,7 @@ def get_updated_coverage(grid,lbd,x,min_x=None, max_x=None, gen_window=10):
     :param min_x: the minimum value of x
     :param max_x: the maximum value of x
     :param gen_window: the number of generations to take into account (the last gen_window are taken into account)
-    :returns: the coverage and the jensen-shannon distance to a uniform distribution, or (None, None) is there are not enough generations
+    :returns: the coverage, the jensen-shannon distance to a uniform distribution and the entropy, or (None, None, None) is there are not enough generations
     """
     bdx=[ind.bd for ind in x]
     ready=True
@@ -88,9 +89,9 @@ def get_updated_coverage(grid,lbd,x,min_x=None, max_x=None, gen_window=10):
     update_grid(grid,min_x, max_x,bdx)
     
     if ready:
-        return coverage(grid),jensen_shannon_distance(grid,generate_uniform_grid(grid))
+        return coverage(grid),jensen_shannon_distance(grid,generate_uniform_grid(grid)),entropy(grid)
     else:
-        return None,None
+        return None,None, None
 
 def get_indiv_coverage(x, min_x=None, max_x=None,nb_bin=None):
     """Compute the coverage of individuals, on the basis of samples drawn for each individual
@@ -106,8 +107,10 @@ def get_indiv_coverage(x, min_x=None, max_x=None,nb_bin=None):
     icov=[]
     specialization=[]
 
-    if (not hasattr(x[0],'evolvability_samples')) or (x[0].evolvability_samples==None):
-        return None, None
+    # If we are in the stat offspring, some indiv may have been tested for evolvability (the ones that have been selected) and not the others. In this case, we don't compute the evolvability stats at all.
+    for ind in x:
+        if (not hasattr(ind,'evolvability_samples')) or (ind.evolvability_samples is None):
+            return None, None
     
     # computing the grid of offpsring and the corresponding coverage
     for ind in x:

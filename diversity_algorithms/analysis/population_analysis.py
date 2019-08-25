@@ -47,6 +47,19 @@ def update_grid(grid,min_x, max_x, x):
         #print("Adding a point to "+str(ix))
         grid[tuple(ix)]+=1
 
+def entropy(grid):
+    """Return the entropy of the grid (close to 1 == uniform)."""
+    nb_bin=np.shape(grid)
+    nbc=reduce(lambda x,y:x*y,nb_bin,1)
+    n=np.sum(grid)
+    #print("Number of cells: %d, number of points: %d"%(nbc, n))
+    if (n==0):
+        return float('NaN')
+    entropy=np.array(grid)
+    entropy=entropy/float(n)
+    entropy=entropy*np.log(entropy)
+    return -1.*float(np.sum(entropy))/float(np.log(nbc))
+
 def coverage(grid):
     """Return the coverage, the ratio of non zero cells on the total number of cells."""
     nb_bin=np.shape(grid)

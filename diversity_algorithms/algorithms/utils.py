@@ -63,6 +63,11 @@ def dump_pop(pop, gen, run_name="runXXX"):
                 out_dict["novelty_%d" % i] = ind.novelty
             if(hasattr(ind,'bd')):
                 out_dict["bd_%d" % i] = ind.bd
+            if ((hasattr(ind,'evolvability_samples')) and (ind.evolvability_samples is not None)):
+                for (j,indj) in enumerate(ind.evolvability_samples):
+                    out_dict["es_%d_%d" %(i,j)] = indj.bd 
+
+                
     try:
         os.mkdir(run_name)
     except OSError:

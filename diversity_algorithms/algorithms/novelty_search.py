@@ -188,11 +188,6 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     logbook.record(gen=0, nevals=len(invalid_ind), **record, **record_offspring)
     if verbose:
         print(logbook.stream)
-
-    for ind in population:
-        ind.evolvability_samples=None # To avoid memory to inflate too much...
-        
-
     
     if dump_period_bd:
         dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
@@ -206,7 +201,10 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     
     if dump_period_pop:
         dump_pop(population, 0, run_name) # Dump initial pop
-    
+
+    for ind in population:
+        ind.evolvability_samples=None # To avoid memory to inflate too much..
+        
     # Begin the generational process
     for gen in range(1, ngen + 1):
         # Vary the population
