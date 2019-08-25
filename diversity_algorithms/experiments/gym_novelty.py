@@ -69,22 +69,31 @@ def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_po
 
 	WARNING: the evolvability requires to generate and evaluate pop_size*evolvability_nb_samples just for statistics purposes, it will significantly slow down the process.
 	"""
-	if (env_name not in grid_features.keys()):
-                print("You need to define the features of the grid to be used to track behavior descriptor coverage in algorithms/__init__.py")
-                return None, None
+#	if (env_name not in grid_features.keys()):
+#                print("You need to define the features of the grid to be used to track behavior descriptor coverage in algorithms/__init__.py")
+#                return None, None
 
-	min_x=grid_features[env_name]["min_x"]
-	max_x=grid_features[env_name]["max_x"]
-	nb_bin=grid_features[env_name]["nb_bin"]
+	if (env_name in grid_features.keys()):
+	        min_x=grid_features[env_name]["min_x"]
+	        max_x=grid_features[env_name]["max_x"]
+	        nb_bin=grid_features[env_name]["nb_bin"]
 
-	grid=build_grid(min_x, max_x, nb_bin)
-	grid_offspring=build_grid(min_x, max_x, nb_bin)
-	stats=None
-	stats_offspring=None
-	nbc=nb_bin**2
-	nbs=nbc*2 # min 2 samples per bin
-	evolvability_nb_samples=nbs
-	
+	        grid=build_grid(min_x, max_x, nb_bin)
+	        grid_offspring=build_grid(min_x, max_x, nb_bin)
+	        stats=None
+	        stats_offspring=None
+	        nbc=nb_bin**2
+	        nbs=nbc*2 # min 2 samples per bin
+	        evolvability_nb_samples=nbs
+	else:
+                grid=None
+                grid_offspring=None
+                min_x=None
+                max_x=None
+                nb_bin=None
+                evolvability_nb_samples=0
+                nbs=0
+                
 	params={"IND_SIZE":eval_gym.controller.n_weights, 
 		"CXPB":0, # No crossover
 		"MUTPB":1., # All offspring are mutated...
@@ -126,6 +135,8 @@ def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_po
 	
 	
 	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
+	if (grid is None):
+                print("WARNING: grid features have not been defined for env "+env_name+". This will have no impact on the run, except that the coverage statistic has been turned off")
 	if (evolvability_period>0) and (evolvability_nb_samples>0):
 		print("WARNING, evolvability_nb_samples>0. The run will last much longer...")
 
