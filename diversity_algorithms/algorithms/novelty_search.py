@@ -160,6 +160,9 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         ind.fitness.values = fit[0]
         ind.parent_bd=None
         ind.bd=listify(fit[1])
+
+    for ind in population:
+        ind.am_parent=0
         
     archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
 
@@ -217,6 +220,11 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
             ind.parent_bd=ind.bd
             ind.bd=listify(fit[1])
 
+        for ind in population:
+            ind.am_parent=1
+        for ind in offspring:
+            ind.am_parent=0
+            
         pq=population+offspring
 
         

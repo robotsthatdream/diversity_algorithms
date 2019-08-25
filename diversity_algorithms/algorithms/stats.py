@@ -22,6 +22,12 @@ def get_bd_dist_to_parent(x):
     else:
         return np.linalg.norm(np.array(x.parent_bd)-np.array(x.bd))
 
+def get_am_parent(x):
+    if (hasattr(x,'am_parent')):
+        return x.am_parent
+    else:
+        return -1
+    
 # fitness-based statistics
 def get_stats_fitness(prefix=""):
     stats_fitness = tools.Statistics(key=get_fit_val)
@@ -148,6 +154,10 @@ def get_stats_generic(value_accessor,x):
     val=[value_accessor(ind) for ind in x]
     return numpy.median(val), numpy.std(val), numpy.min(val), numpy.max(val), Perc(25)(val), Perc(75)(val)
 
+def get_stats_count_generic(value_accessor, target_value, x):
+    val=[value_accessor(ind)==target_value for ind in x]
+    return val.count(True), val.count(False),len(val)
+
 def get_stats_bd_dist_to_parent(x):
     d = [get_bd_dist_to_parent(ind) for ind in x]
     # -1 corresponds to ancestors
@@ -171,9 +181,10 @@ def get_stat_fit_nov_cov(grid, prefix="", indiv=False, min_x=None, max_x=None,nb
     stat_fnc.register(prefix+"fitness",get_stats_generic, get_fit_val)
     stat_fnc.register(prefix+"novelty",get_stats_generic, get_nov)
     stat_fnc.register(prefix+"bd_dist_to_parent",get_stats_bd_dist_to_parent)
-    
-    stat_fnc.register(prefix+"glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window=gen_window_global)
-    if (indiv):
-        stat_fnc.register(prefix+"indiv_cov",get_indiv_coverage,min_x=min_x, max_x=max_x, nb_bin=nb_bin)
+    stat_fnc.register(prefix+"parent_vs_offspring_selection",get_stats_count_generic, get_am_parent, 1)
+    if (grid is not None):
+        stat_fnc.register(prefix+"glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window=gen_window_global)
+        if (indiv):
+            stat_fnc.register(prefix+"indiv_cov",get_indiv_coverage,min_x=min_x, max_x=max_x, nb_bin=nb_bin)
 
     return stat_fnc
