@@ -231,8 +231,7 @@ class UnstructuredArchive:
 
 
 ## DEAP compatible algorithm
-def QDEaMuPlusLambda(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_type=StructuredGrid, archive_kwargs={"bins_per_dim":50, "dims_ranges":([0,600],[0,600])}, replace_strategy=replace_never, sample_strategy="novelty",
-						  stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX"):
+def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_type=StructuredGrid, archive_kwargs={"bins_per_dim":50, "dims_ranges":([0,600],[0,600])}, replace_strategy=replace_never, sample_strategy="novelty", stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX"):
 	"""QD algorithm
  
 	QD algorithm. Parameters:
@@ -416,18 +415,18 @@ def QD(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
 			"CXPB":0, # crossover probility
 			"MUTPB":0.5, # probability to mutate an individual
 			"NGEN":1000, # number of generations
-			"STATS":None, # Statistics
 			"STATS_OFFSPRING":None, # Statistics on offspring
 			"MIN": 0, # Min of genotype values
 			"MAX": 1, # Max of genotype values
-			"MU": 20, # Number of individuals selected at each generation
 			"LAMBDA": 100, # Number of offspring generated at each generation
 			"ALPHA": 0.1, # Alpha parameter of Blend crossover
 			"ETA_M": 15.0, # Eta parameter for polynomial mutation
 			"INDPB": 0.1, # probability to mutate a specific genotype parameter given that the individual is mutated. (The unconditional probability of a parameter being mutated is INDPB*MUTPB
 			"K":15, # Number of neighbors to consider in the archive for novelty computation
-			"ADD_STRATEGY":"random", # Selection strategy to add individuals to the archive
-			"LAMBDANOV":6, # How many individuals to add to the archive at each gen
+			"ARCHIVE_TYPE"="grid",
+			"ARCHIVE_ARGS"={"bins_per_dim":50, "dims_ranges":([0,600],[0,600])},
+			"REPLACE_STRATEGY"="never",
+			"SAMPLE_STRAGEGY"="novelty",
 			"EVOLVABILITY_NB_SAMPLES":0, # How many children to generate to estimate evolvability
 			"EVOLVABILITY_PERIOD": 100, # Period to estimate evolvability
 			"DUMP_PERIOD_POP": 10, # Period to dump population
@@ -476,26 +475,31 @@ def QD(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
 		toolbox.register("map", pool.map)
 	
 
-	pop = toolbox.population(n=params["MU"])
+	pop = toolbox.population(n=params["LAMBDA"])
 	
-	rpop, archive, logbook = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], stats_offspring=params["STATS_OFFSPRING"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name)
+	if(params["ARCHIVE_TYPE"] == "grid"):
+		archiveType = StructuredGrid
+	elif(params["ARCHIVE_TYPE"] == "archive"):
+		archiveType = UnstructuredArchive
+	else:
+		print("ERROR: Unknown archive type %s" % str(params["ARCHIVE_TYPE"]))
+		sys.exit(1)
+	
+	if(params["REPLACE_STRATEGY"]=="never"):
+		replaceStrat = replace_never
+	elif(params["REPLACE_STRATEGY"]=="always"):
+		replaceStrat = replace_always
+	elif(params["REPLACE_STRATEGY"]=="fitness"):
+		replaceStrat = replace_if_better
+	else:
+		print("ERROR: Unknown replacement strategy %s" % str(params["REPLACE_STRATEGY"]))
+		sys.exit(1)
+		
+	rpop, archive, logbook = QDEa(pop, toolbox, n_parents=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k_nov=params["K"], archive_type=archiveType, archive_kwargs=params["ARCHIVE_ARGS"], replace_strategy=replaceStrat, sample_strategy=params["SAMPLE_STRAGEGY"], stats_offspring=params["STATS_OFFSPRING"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name)
 		
 	return rpop, archive, logbook
   
 if (__name__=='__main__'):
 	print("Test of the QD")
 
-	OK=True
-
-	print("Test of the archive")
-
-	lbd=[[i] for i in range(100)]
-	archive=NovArchive(lbd,5)
-	test=[[[50],6./5.], [[0],2.]]
-	for t in test:
-		if(archive.get_nov(t[0])!=t[1]):
-			print("ERROR: Estimated value: %f, ground truth: %f"%(archive.get_nov(t[0]),t[1]))
-			OK=False
-		else:
-			print('.', end='')
-	print("")
+	#TODO
