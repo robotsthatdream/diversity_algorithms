@@ -157,7 +157,7 @@ def launch_qd(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_pop
 	pop, archive, logbook = QD(eval_with_functor, params, pool, run_name, geno_type="realarray")
 	dump_pop(pop,nb_gen,run_name)
 	dump_logbook(logbook,nb_gen,run_name)
-	dump_archive(archive,nb_gen,run_name)
+	dump_archive_qd(archive,nb_gen,run_name)
 	
 	return pop, logbook
 
