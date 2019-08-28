@@ -79,7 +79,7 @@ class StructuredGrid:
 		if(compute_novelty):
 			self.update_novelty()
 
-	def get_size(self):
+	def size(self):
 		return len(self.grid)
 
 	def get_content_as_list(self):
@@ -141,7 +141,7 @@ class StructuredGrid:
 	def sample_archive(self, n, strategy="random"):
 		allindivs = list(self.grid.values())
 		if(strategy=="random"):
-			indices = np.random.choice(self.get_size(), n, replace=False)
+			indices = np.random.choice(self.size(), n, replace=False)
 		elif(strategy=="novelty"):
 			if not self.with_novelty:
 				print("ERROR: Requested novelty-based sampling but the grid was built with compute_novelty=False")
@@ -162,11 +162,12 @@ class UnstructuredArchive:
 		self.archive = list()
 		self.replace_strategy = replace_strategy
 		self.k = k_nov_knn
+		self.kdtree = None
 		for p in initial_pop:
 			self.try_add(p)
 		self.update_novelty()
 
-	def get_size(self):
+	def size(self):
 		return len(self.archive)
 	
 	def get_content_as_list(self):
@@ -174,7 +175,7 @@ class UnstructuredArchive:
 
 	def update_novelty(self):
 		# 1) Build KD tree
-		self.kdtree=KDTree(self.archive)
+		self.kdtree=KDTree([ind.bd for ind in self.archive])
 		# 2) Compute novelty values
 		for (i,ind) in enumerate(self.archive):
 			nov = self.get_nov(ind.bd, in_archive=True)
@@ -197,7 +198,7 @@ class UnstructuredArchive:
 	
 	def try_add(self,indiv):
 		bd = indiv.bd
-		close_neighbors = self.kdtree.query_ball_point(bd, self.r)
+		close_neighbors = ([] if(self.kdtree is None) else self.kdtree.query_ball_point(bd, self.r))
 		if not close_neighbors: # No neighbors in ball, no problem - add indiv
 			self.archive.append(indiv)
 			self.update_novelty()
@@ -221,7 +222,7 @@ class UnstructuredArchive:
 
 	def sample_archive(self, n, strategy="random"):
 		if(strategy=="random"):
-			indices = np.random.choice(self.get_size(), n, replace=False)
+			indices = np.random.choice(self.size(), n, replace=False)
 		elif(strategy=="novelty"):
 			novelties = [ind.novelty for ind in self.archive]
 			indices = np.argsort(novelties)[:-(n+1):-1]
@@ -282,7 +283,7 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 		ind.am_parent=0
 	
 
-	archive_args = archive_kwargs[0] # Why is it in a tuple ? No idea
+	archive_args = archive_kwargs
 	archive_args["k_nov_knn"] = k_nov
 	archive = archive_type(population,**archive_args)
 
@@ -386,7 +387,7 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 		
 		if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump offspring
 			dump_pop(offspring, gen,run_name,"offspring")
-			dump_archive(archive, gen,run_name)
+			dump_archive_qd(archive, gen,run_name)
 			dump_logbook(logbook, gen,run_name)
 
 

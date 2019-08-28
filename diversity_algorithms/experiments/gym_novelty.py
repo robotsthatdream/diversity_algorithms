@@ -198,7 +198,7 @@ if(__name__=='__main__'):
 	# Get env and controller
 
 			
-	run_name=generate_exp_name(env_name)
+	run_name=generate_exp_name(env_name"_NovSearch")
 	print("Saving logs in "+run_name)
 	dump_exp_details(sys.argv,run_name)
 

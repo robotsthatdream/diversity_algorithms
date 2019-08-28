@@ -86,10 +86,11 @@ def dump_archive(archive, gen, run_name="runXXX"):
 
 # TODO: Should unify
 def dump_archive_qd(archive, gen, run_name="runXXX"):
-    out_dict = {"gen": gen, "size": archive.get_size()}
+    out_dict = {"gen": gen, "size": archive.size()}
     content = archive.get_content_as_list()
     for (i,ind) in enumerate(content):
         out_dict["bd_%d" % i] = np.array(ind.bd)
+        out_dict["nov_%d" % i] = ind.novelty
     try:
         os.mkdir(run_name)
     except OSError:

@@ -125,13 +125,14 @@ def launch_qd(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_pop
 
 	if(archive_type == "grid"):
 		params["ARCHIVE_TYPE"] = "grid"
-		params["ARCHIVE_ARGS"]={"bins_per_dim":50, "dims_ranges":([0,600],[0,600])},
+		params["ARCHIVE_ARGS"]={"bins_per_dim":50, "dims_ranges":([0,600],[0,600])}
 	elif(archive_type == "archive"):
 		params["ARCHIVE_TYPE"] = "archive"
 		params["ARCHIVE_ARGS"]={"r_ball_replace":6} # seems comparable to the 12x12 cells ofthe grid
 	else:
 		print("ERROR: Unknown archive type %s" % str(params["ARCHIVE_TYPE"]))
 		sys.exit(1)
+
 
 	params["REPLACE_STRATEGY"]="never"
 	params["SAMPLE_STRAGEGY"]="novelty"
@@ -207,7 +208,7 @@ if(__name__=='__main__'):
 	# Get env and controller
 
 			
-	run_name=generate_exp_name(env_name)
+	run_name=generate_exp_name(env_name+"_QD")
 	print("Saving logs in "+run_name)
 	dump_exp_details(sys.argv,run_name)
 
