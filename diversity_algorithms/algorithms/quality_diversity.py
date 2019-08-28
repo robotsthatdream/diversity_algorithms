@@ -71,10 +71,11 @@ class StructuredGrid:
 		self.mins = np.array([r[0] for r in self.dims_ranges])
 		self.maxs = np.array([r[1] for r in self.dims_ranges])
 		self.grid = dict()
-		for p in initial_pop:
-			self.try_add(p)
 		self.with_novelty = compute_novelty
 		self.k = k_nov_knn
+		self.replace_strategy = replace_strategy
+		for p in initial_pop:
+			self.try_add(p)
 		if(compute_novelty):
 			self.update_novelty()
 
@@ -95,7 +96,7 @@ class StructuredGrid:
 			nov = self.get_nov(self.grid[bin_].bd, in_archive=True)
 			self.grid[bin_].novelty = nov
 
-	def get_nov(self, bd, extra_indivs=None, in_archive=False):
+	def get_nov(self, bd, extra_indivs=[], in_archive=False):
 		if not self.with_novelty:
 			print("ERROR: Requested novelty computation operation but the grid was built with compute_novelty=False")
 			sys.exit(1)
@@ -124,7 +125,7 @@ class StructuredGrid:
 		indiv_bin = self.bd_to_bin(bd)
 		if indiv_bin in self.grid:
 			old_indiv = self.grid[indiv_bin]
-			if replace_strategy(old_indiv, indiv): # Replace
+			if self.replace_strategy(old_indiv, indiv): # Replace
 				self.grid[indiv_bin] = indiv
 				if self.with_novelty:
 					self.update_novelty()
@@ -141,16 +142,16 @@ class StructuredGrid:
 		allindivs = list(self.grid.values())
 		if(strategy=="random"):
 			indices = np.random.choice(self.get_size(), n, replace=False)
-		elif(strategy="novelty"):
+		elif(strategy=="novelty"):
 			if not self.with_novelty:
 				print("ERROR: Requested novelty-based sampling but the grid was built with compute_novelty=False")
 				sys.exit(1)
 			novelties = [ind.novelty for ind in allindivs]
 			indices = np.argsort(novelties)[:-(n+1):-1]
 		else:
-			print("ERROR: Unknown sampling strategy %s" % str(strategy)
+			print("ERROR: Unknown sampling strategy %s" % str(strategy))
 			sys.exit(1)
-		return allindivs[indices]
+		return list([allindivs[i] for i in indices])
 
 
 class UnstructuredArchive:
@@ -159,9 +160,10 @@ class UnstructuredArchive:
 	def __init__(self, initial_pop, r_ball_replace, replace_strategy=replace_never, k_nov_knn=15):
 		self.r = r_ball_replace
 		self.archive = list()
+		self.replace_strategy = replace_strategy
+		self.k = k_nov_knn
 		for p in initial_pop:
 			self.try_add(p)
-		self.k = k_nov_knn
 		self.update_novelty()
 
 	def get_size(self):
@@ -178,7 +180,7 @@ class UnstructuredArchive:
 			nov = self.get_nov(ind.bd, in_archive=True)
 			self.archive[i].novelty = nov
 
-	def get_nov(self, bd, extra_indivs=None, in_archive=False):
+	def get_nov(self, bd, extra_indivs=[], in_archive=False):
 		dists=[]
 		# Handle the extra_indivs
 		for ind in extra_indivs:
@@ -204,7 +206,7 @@ class UnstructuredArchive:
 			replace_ok = True
 			for indiv_index in close_neighbors:
 				old_indiv = self.archive[indiv_index]
-				if not replace_strategy(old_indiv, indiv): # Replace
+				if not self.replace_strategy(old_indiv, indiv): # Replace
 					replace_ok = False
 					break
 			if replace_ok:
@@ -220,13 +222,13 @@ class UnstructuredArchive:
 	def sample_archive(self, n, strategy="random"):
 		if(strategy=="random"):
 			indices = np.random.choice(self.get_size(), n, replace=False)
-		elif(strategy="novelty"):
+		elif(strategy=="novelty"):
 			novelties = [ind.novelty for ind in self.archive]
 			indices = np.argsort(novelties)[:-(n+1):-1]
 		else:
-			print("ERROR: Unknown sampling strategy %s" % str(strategy)
+			print("ERROR: Unknown sampling strategy %s" % str(strategy))
 			sys.exit(1)
-		return self.archive[indices]
+		return list([self.archive[i] for i in indices])
 
 
 
@@ -255,7 +257,7 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 		
 	if(halloffame!=None):
 		print("WARNING: the hall of fame argument is ignored in the Novelty Search Algorithm")
-	
+	stats=None # No population - stats on offspring only
 		
 	#print("	 lambda=%d, mu=%d, cxpb=%.2f, mutpb=%.2f, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,cxpb,mutpb,ngen,k,lambdaNov)) #TODO replace
 
@@ -280,7 +282,15 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 		ind.am_parent=0
 	
 
+	archive_args = archive_kwargs[0] # Why is it in a tuple ? No idea
+	archive_args["k_nov_knn"] = k_nov
+	archive = archive_type(population,**archive_args)
+
+
 	gen=0	
+
+	#Resample "initial population" as the archive content (maybe not all were added)
+	population = archive.get_content_as_list()
 
 	# Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
 	if (evolvability_nb_samples>0) and (evolvability_period>0):
@@ -296,6 +306,7 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 			dump_bd_evol.close()
 			ig+=1
 		print("")
+
 
 	record = stats.compile(population) if stats is not None else {}
 	record_offspring = stats_offspring.compile(population) if stats_offspring is not None else {}
@@ -319,8 +330,6 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 	for ind in population:
 		ind.evolvability_samples=None # To avoid memory to inflate too much..
 	
-	archive_args = archive_kwargs + {"k_nov_knn": k_nov}
-	archive = archive_type(population,**archive_args)
 	
 	
 	# Begin the generational process
@@ -329,7 +338,7 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 		parents = archive.sample_archive(n_parents, strategy=sample_strategy)
 		
 		if(len(parents)) < n_parents:
-			print("WARNING: Not enough individuals in archive to sample %d parents; will complete with random individuals" % n_parents)
+			print("WARNING: Not enough individuals in archive to sample %d parents; will complete with %d random individuals" % (n_parents, n_parents-len(parents)))
 			extra_random_indivs = toolbox.population(n=(n_parents-len(parents)))
 			extra_fitnesses = toolbox.map(toolbox.evaluate, extra_random_indivs)
 			for ind, fit in zip(extra_random_indivs, extra_fitnesses):
@@ -361,6 +370,9 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 		for ind in offspring:
 			if(archive.try_add(ind)):
 				n_added += 1
+			else:
+				ind.novelty = archive.get_nov(ind.bd, in_archive=False)
+		
 
 		if(dump_period_bd and(gen % dump_period_bd == 0)): # Dump offspring behavior descriptors
 			dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
@@ -423,10 +435,10 @@ def QD(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
 			"ETA_M": 15.0, # Eta parameter for polynomial mutation
 			"INDPB": 0.1, # probability to mutate a specific genotype parameter given that the individual is mutated. (The unconditional probability of a parameter being mutated is INDPB*MUTPB
 			"K":15, # Number of neighbors to consider in the archive for novelty computation
-			"ARCHIVE_TYPE"="grid",
-			"ARCHIVE_ARGS"={"bins_per_dim":50, "dims_ranges":([0,600],[0,600])},
-			"REPLACE_STRATEGY"="never",
-			"SAMPLE_STRAGEGY"="novelty",
+			"ARCHIVE_TYPE":"grid",
+			"ARCHIVE_ARGS":{"bins_per_dim":50, "dims_ranges":([0,600],[0,600])},
+			"REPLACE_STRATEGY":"never",
+			"SAMPLE_STRAGEGY":"novelty",
 			"EVOLVABILITY_NB_SAMPLES":0, # How many children to generate to estimate evolvability
 			"EVOLVABILITY_PERIOD": 100, # Period to estimate evolvability
 			"DUMP_PERIOD_POP": 10, # Period to dump population

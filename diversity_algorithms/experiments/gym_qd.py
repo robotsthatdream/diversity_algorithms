@@ -24,7 +24,7 @@ import math
 # Yes, this is ugly. This is DEAP's fault.
 # See https://github.com/DEAP/deap/issues/57
 
-from diversity_algorithms.algorithms.novelty_search import set_creator
+from diversity_algorithms.algorithms.quality_diversity import set_creator
 set_creator(creator)
 
 
@@ -32,7 +32,7 @@ creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
 #creator.create("Strategy", list, typecode="d")
 
-from diversity_algorithms.algorithms.novelty_search import NovES
+from diversity_algorithms.algorithms.quality_diversity import QD
 from diversity_algorithms.algorithms.utils import *
 # =====
 
@@ -153,7 +153,7 @@ def launch_qd(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_pop
 		pool=None
 		
 	dump_params(params,run_name)
-	pop, archive, logbook = QDEa(eval_with_functor, params, pool, run_name, geno_type="realarray")
+	pop, archive, logbook = QD(eval_with_functor, params, pool, run_name, geno_type="realarray")
 	dump_pop(pop,nb_gen,run_name)
 	dump_logbook(logbook,nb_gen,run_name)
 	dump_archive(archive,nb_gen,run_name)
