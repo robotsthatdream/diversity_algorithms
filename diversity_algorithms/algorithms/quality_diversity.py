@@ -60,6 +60,9 @@ def replace_always(oldind,newind):
 def replace_never(oldind,newind):
 	return False
 
+def replace_random(oldind, newind, p=0.5)
+	return (np.random.uniform() < p)
+
 class StructuredGrid:
 	""" Structured grid for MAP-Elite like stuff
 	    Also includes a KD-tree and maintain novelty scores
@@ -504,6 +507,8 @@ def QD(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
 		replaceStrat = replace_always
 	elif(params["REPLACE_STRATEGY"]=="fitness"):
 		replaceStrat = replace_if_better
+	elif(params["REPLACE_STRATEGY"]=="random"):
+		replaceStrat = replace_random
 	else:
 		print("ERROR: Unknown replacement strategy %s" % str(params["REPLACE_STRATEGY"]))
 		sys.exit(1)
