@@ -60,7 +60,7 @@ def replace_always(oldind,newind):
 def replace_never(oldind,newind):
 	return False
 
-def replace_random(oldind, newind, p=0.5)
+def replace_random(oldind, newind, p=0.5):
 	return (np.random.uniform() < p)
 
 class StructuredGrid:
