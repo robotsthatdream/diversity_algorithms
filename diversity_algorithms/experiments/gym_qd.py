@@ -24,7 +24,7 @@ import math
 # Yes, this is ugly. This is DEAP's fault.
 # See https://github.com/DEAP/deap/issues/57
 
-from diversity_algorithms.algorithms.novelty_search import set_creator
+from diversity_algorithms.algorithms.quality_diversity import set_creator
 set_creator(creator)
 
 
@@ -32,7 +32,7 @@ creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
 #creator.create("Strategy", list, typecode="d")
 
-from diversity_algorithms.algorithms.novelty_search import NovES
+from diversity_algorithms.algorithms.quality_diversity import QD
 from diversity_algorithms.algorithms.utils import *
 # =====
 
@@ -56,7 +56,7 @@ def eval_with_functor(g):
 
 
 
-def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1):
+def launch_qd(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1, archive_type="grid"):
 	"""Launch a novelty search run on the maze
 	
 	Launch a novelty search run on the maze:
@@ -102,11 +102,8 @@ def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_po
 		"NGEN":nb_gen, # Number of generations
 		"MIN": -5, # Seems reasonable for NN weights
 		"MAX": 5, # Seems reasonable for NN weights
-		"MU": pop_size,
-		"LAMBDA": pop_size*2,
+		"LAMBDA": pop_size,
 		"K":15,
-		"ADD_STRATEGY":"random",
-		"LAMBDANOV":6,
 		"EVOLVABILITY_NB_SAMPLES": evolvability_nb_samples,
 		"EVOLVABILITY_PERIOD":evolvability_period,
 		"DUMP_PERIOD_POP": dump_period_pop,
@@ -118,23 +115,34 @@ def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_po
 
 
 	# We use a different window size to compute statistics in order to have the same number of points for population and offspring statistics
-	window_population=nbs/params["MU"]
 	window_offspring=nbs/params["LAMBDA"]
-	
+
+	stats = None # No "population" - only do stats on offspring
 	if (evolvability_period>0) and (evolvability_nb_samples>0):
-		stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_population)
 		stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_offspring)
 	else:
-		stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_population)
 		stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_", indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_offspring)
+
+	if(archive_type == "grid"):
+		params["ARCHIVE_TYPE"] = "grid"
+		params["ARCHIVE_ARGS"]={"bins_per_dim":50, "dims_ranges":([0,600],[0,600])}
+	elif(archive_type == "archive"):
+		params["ARCHIVE_TYPE"] = "archive"
+		params["ARCHIVE_ARGS"]={"r_ball_replace":6} # seems comparable to the 12x12 cells ofthe grid
+	else:
+		print("ERROR: Unknown archive type %s" % str(params["ARCHIVE_TYPE"]))
+		sys.exit(1)
+
+
+	params["REPLACE_STRATEGY"]="never"
+	params["SAMPLE_STRAGEGY"]="novelty"
 
 	params["STATS"] = stats # Statistics
 	params["STATS_OFFSPRING"] = stats_offspring # Statistics on offspring
-	params["WINDOW_POPULATION"]=window_population
 	params["WINDOW_OFFSPRING"]=window_offspring
 	
 	
-	print("Launching Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
+	print("Launching QD with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
 	if (grid is None):
                 print("WARNING: grid features have not been defined for env "+env_name+". This will have no impact on the run, except that the coverage statistic has been turned off")
 	if (evolvability_period>0) and (evolvability_nb_samples>0):
@@ -146,10 +154,10 @@ def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_po
 		pool=None
 		
 	dump_params(params,run_name)
-	pop, archive, logbook = NovES(eval_with_functor, params, pool, run_name, geno_type="realarray")
+	pop, archive, logbook = QD(eval_with_functor, params, pool, run_name, geno_type="realarray")
 	dump_pop(pop,nb_gen,run_name)
 	dump_logbook(logbook,nb_gen,run_name)
-	dump_archive(archive,nb_gen,run_name)
+	dump_archive_qd(archive,nb_gen,run_name)
 	
 	return pop, logbook
 
@@ -161,11 +169,11 @@ nb_gen=1000
 evolvability_period=0
 dump_period_pop=10
 dump_period_bd=1
-
+archive_type = "grid"
 try:
-	opts, args = getopt.getopt(sys.argv[1:],"he:p:g:v:b:d:",["env_name=","pop_size=","nb_gen=","evolvability_period=","dump_period_bd=","dump_period_pop="])
+	opts, args = getopt.getopt(sys.argv[1:],"he:p:g:v:b:d:a:",["env_name=","pop_size=","nb_gen=","evolvability_period=","dump_period_bd=","dump_period_pop=","archive_type="])
 except getopt.GetoptError:
-	print(sys.argv[0]+" -e <env_name> [-p <population size> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period>]")
+	print(sys.argv[0]+" -e <env_name> [-p <population size> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period> archive_type=(archive|grid)]")
 	sys.exit(2)
 for opt, arg in opts:
 	if opt == '-h':
@@ -177,6 +185,8 @@ for opt, arg in opts:
 		pop_size = int(arg)
 	elif opt in ("-g", "--nb_gen"):
 		nb_gen = int(arg)
+	elif opt in ("-a", "--archive_type"):
+		archive_type = str(arg)
 	elif opt in ("-v", "--evolvability_period"):
 		evolvability_period = int(arg)
 	elif opt in ("-b", "--dump_period_bd"):
@@ -198,11 +208,11 @@ if(__name__=='__main__'):
 	# Get env and controller
 
 			
-	run_name=generate_exp_name(env_name"_NovSearch")
+	run_name=generate_exp_name(env_name+"_QD")
 	print("Saving logs in "+run_name)
 	dump_exp_details(sys.argv,run_name)
 
-	pop, logbook = launch_nov(env_name, pop_size, nb_gen, evolvability_period, dump_period_pop, dump_period_bd)
+	pop, logbook = launch_qd(env_name, pop_size, nb_gen, evolvability_period, dump_period_pop, dump_period_bd, archive_type)
 
 	
 	dump_end_of_exp(run_name)
