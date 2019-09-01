@@ -151,8 +151,8 @@ def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, p
 
 
 ## DEAP compatible algorithm
-def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy,lambdaNov,
-                          stats=None, stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX"):
+def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy,lambdaNov,
+                          stats=None, stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX", variant="NS"):
     """Novelty Search algorithm
  
     Novelty Search algorithm. Parameters:
@@ -174,11 +174,16 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     :param evolvability_period: period of the evolvability computation
     :param evolvability_nb_samples: the number of samples to generate from each individual in the population to estimate their evolvability (WARNING: it will significantly slow down a run and it is used only for statistical reasons
     """
+
+    if ("+" in variant):
+        emo=True
+    else:
+        emo=False
         
     if(halloffame!=None):
         print("WARNING: the hall of fame argument is ignored in the Novelty Search Algorithm")
     
-        
+    print("     variant="+variant)
     print("     lambda=%d, mu=%d, cxpb=%.2f, mutpb=%.2f, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,cxpb,mutpb,ngen,k,lambdaNov))
 
     logbook = tools.Logbook()
@@ -194,7 +199,7 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
     # fit is a list of fitness (that is also a list) and behavior descriptor
 
     for ind, fit in zip(invalid_ind, fitnesses):
-        ind.fitness.values = fit[0]
+        ind.fit = fit[0] # fit is an attribute just used to store the fitness value
         ind.parent_bd=None
         ind.bd=listify(fit[1])
 
@@ -203,6 +208,20 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         
     archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
 
+    for ind in population:
+        if (emo):
+            if (variant == "NS+Fit"):
+                ind.fitness.values = (ind.novelty, ind.fit)
+            elif (variant == "NS+BDDistP"):
+                ind.fitness.values = (ind.novelty, 0)
+            elif (variant == "NS+Fit+BDDistP"):
+                ind.fitness.values = (ind.novelty, ind.fit, 0)
+            else:
+                print("WARNING: unknown variant: "+variant)
+                ind.fitness.values=ind.fit
+        else:
+            ind.fitness.values=ind.fit
+    
     gen=0    
 
     # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
@@ -228,7 +247,8 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit[0] 
+            ind.fit = fit[0]
+            ind.fitness.values = fit[0]
             ind.parent_bd=ind.bd
             ind.bd=listify(fit[1])
 
@@ -242,12 +262,40 @@ def noveltyEaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,
         
         archive=updateNovelty(pq,offspring,archive,k,add_strategy,lambdaNov)
 
+        for ind in pq:
+            if (emo):
+                if (variant == "NS+Fit"):
+                    ind.fitness.values = (ind.novelty, ind.fit)
+                elif (variant == "NS+BDDistP"):
+                    if (ind.parent_bd is None):
+                        bddistp=0
+                    else:
+                        bddistp=np.linalg.norm(np.array(ind.bd) - np.array(ind.parent_bd))
+                    ind.fitness.values = (ind.novelty, bddistp)
+                elif (variant == "NS+Fit+BDDistP"):
+                    if (ind.parent_bd is None):
+                        bddistp=0
+                    else:
+                        bddistp=np.linalg.norm(np.array(ind.bd) - np.array(ind.parent_bd))
+                    ind.fitness.values = (ind.novelty, ind.fit, bddistp)
+                else:
+                    print("WARNING: unknown variant: "+variant)
+                    ind.fitness.values=ind.fit
+
+            else:
+                ind.fitness.values=ind.fit
+
+        if ((emo) and (offspring[0].fitness.values == offspring[0].fit)):
+            print ("WARNING: EMO and the fitness is just the fitness !")
 
         print("Gen %d"%(gen))
 
         
         # Select the next generation population
-        population[:] = toolbox.select(pq, mu)        
+        if ("," in variant):
+            population[:] = toolbox.select(offspring, mu)        
+        else:
+            population[:] = toolbox.select(pq, mu)        
 
         generate_dumps(run_name, dump_period_bd, dump_period_pop, population, offspring, gen, pop1label="population", pop2label="offspring", archive=archive, logbook=logbook)
         
@@ -291,8 +339,9 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray")
             "EVOLVABILITY_NB_SAMPLES":0, # How many children to generate to estimate evolvability
             "EVOLVABILITY_PERIOD": 100, # Period to estimate evolvability
             "DUMP_PERIOD_POP": 10, # Period to dump population
-            "DUMP_PERIOD_BD": 1 # Period to dump behavior descriptors
-           }
+            "DUMP_PERIOD_BD": 1, # Period to dump behavior descriptors
+            "VARIANT": "NS" # "NS", "Fit", "NS+Fit", "NS+BDDistP", "NS+Fit+BDDistP" or any variant with "," at the end ("NS," for instance) if selection within the offspring only ("," selection scheme of ES) 
+    }
     
     
     for key in myparams.keys():
@@ -328,7 +377,13 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray")
     else:
         raise RuntimeError("Unknown genotype type %s" % geno_type)
     #Common elements - selection and evaluation
-    toolbox.register("select", tools.selBest, fit_attr='novelty')
+    if (params["VARIANT"] == "NS"):
+        toolbox.register("select", tools.selBest, fit_attr='novelty')
+    elif (params["VARIANT"] == "Fit"):
+        toolbox.register("select", tools.selBest, fit_attr='fitness')
+    else:
+        toolbox.register("select", tools.selNSGA2)
+        
     toolbox.register("evaluate", evaluate)
     
     # Parallelism
@@ -338,7 +393,7 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray")
 
     pop = toolbox.population(n=params["MU"])
     
-    rpop, archive, logbook = noveltyEaMuPlusLambda(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], stats_offspring=params["STATS_OFFSPRING"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name)
+    rpop, archive, logbook = noveltyEa(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], stats_offspring=params["STATS_OFFSPRING"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name, variant=params["VARIANT"])
         
     return rpop, archive, logbook
   

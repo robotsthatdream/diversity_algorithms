@@ -56,7 +56,7 @@ def eval_with_functor(g):
 
 
 
-def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1):
+def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1, variant="NS"):
 	"""Launch a novelty search run on the maze
 	
 	Launch a novelty search run on the maze:
@@ -94,7 +94,8 @@ def launch_nov(env_name, pop_size, nb_gen, evolvability_period=0, dump_period_po
                 evolvability_nb_samples=0
                 nbs=0
                 
-	params={"IND_SIZE":eval_gym.controller.n_weights, 
+	params={"VARIANT": variant,
+                "IND_SIZE":eval_gym.controller.n_weights, 
 		"CXPB":0, # No crossover
 		"MUTPB":1., # All offspring are mutated...
 		"INDPB":0.1, # ...but only 10% of parameters are mutated
@@ -161,15 +162,16 @@ nb_gen=1000
 evolvability_period=0
 dump_period_pop=10
 dump_period_bd=1
+variant="NS"
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:],"he:p:g:v:b:d:",["env_name=","pop_size=","nb_gen=","evolvability_period=","dump_period_bd=","dump_period_pop="])
+	opts, args = getopt.getopt(sys.argv[1:],"he:p:g:v:b:d:a:",["env_name=","pop_size=","nb_gen=","evolvability_period=","dump_period_bd=","dump_period_pop=", "variant="])
 except getopt.GetoptError:
-	print(sys.argv[0]+" -e <env_name> [-p <population size> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period>]")
+	print(sys.argv[0]+" -e <env_name> [-p <population size> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period> -a <variant>]")
 	sys.exit(2)
 for opt, arg in opts:
 	if opt == '-h':
-		print(sys.argv[0]+" -e <env_name> [-p <population size> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period>]")
+		print(sys.argv[0]+" -e <env_name> [-p <population size> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period> -a <variant>]")
 		sys.exit()
 	elif opt in ("-e", "--env_name"):
 		env_name = arg
@@ -183,6 +185,8 @@ for opt, arg in opts:
 		dump_period_bd = int(arg)
 	elif opt in ("-d", "--dump_period_pop"):
 		dump_period_pop = int(arg)
+	elif opt in ("-a", "--variant"):
+		variant = arg
 		
 if(env_name is None):
 	print("You must provide the environment name (as it ias been registered in gym)")
@@ -198,11 +202,11 @@ if(__name__=='__main__'):
 	# Get env and controller
 
 			
-	run_name=generate_exp_name(env_name"_NovSearch")
+	run_name=generate_exp_name(env_name+"_"+variant)
 	print("Saving logs in "+run_name)
 	dump_exp_details(sys.argv,run_name)
 
-	pop, logbook = launch_nov(env_name, pop_size, nb_gen, evolvability_period, dump_period_pop, dump_period_bd)
+	pop, logbook = launch_nov(env_name, pop_size, nb_gen, evolvability_period, dump_period_pop, dump_period_bd, variant)
 
 	
 	dump_end_of_exp(run_name)
