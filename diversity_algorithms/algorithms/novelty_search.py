@@ -112,7 +112,7 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
 
    return archive
 
-def generate_evolvability_samples(population, evolvability_nb_samples, evolvability_period, gen):
+def generate_evolvability_samples(run_name, population, toolbox, evolvability_nb_samples, evolvability_period, gen, cxpb, mutpb):
     if (evolvability_nb_samples>0) and (evolvability_period>0):
         print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
         print("sampling for evolvability: ",end='', flush=True)
@@ -225,7 +225,7 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
     gen=0    
 
     # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
-    generate_evolvability_samples(population, evolvability_nb_samples, evolvability_period, gen)
+    generate_evolvability_samples(run_name, population, toolbox, evolvability_nb_samples, evolvability_period, gen, cxpb, mutpb)
 
     record = stats.compile(population) if stats is not None else {}
     record_offspring = stats_offspring.compile(population) if stats_offspring is not None else {}
@@ -299,7 +299,7 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
 
         generate_dumps(run_name, dump_period_bd, dump_period_pop, population, offspring, gen, pop1label="population", pop2label="offspring", archive=archive, logbook=logbook)
         
-        generate_evolvability_samples(population, evolvability_nb_samples, evolvability_period, gen)
+        generate_evolvability_samples(run_name, population, toolbox, evolvability_nb_samples, evolvability_period, gen, cxpb, mutpb)
         
         # Update the statistics with the new population
         record = stats.compile(population) if stats is not None else {}
