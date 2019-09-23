@@ -89,3 +89,28 @@ def merge_gens(gendict,max_gen=-1, min_gen=-1):
     return out
 
 
+def get_exp_files(resdir, variant, cond_files):
+    """Gets only the experiments that respect some conditions.
+
+    Gets only the experiments that respect some conditions.
+    :param resdir: the dir to explore
+    :param variant: the name of the variant to take into account
+    :param cond_files: a list of files that must exist.
+    """
+    eres=[]
+    with os.scandir(resdir) as it:
+        for f in it:
+            if variant in f.name:
+                # this exp can be considered
+                to_keep=True
+                edir=resdir+"/"+f.name
+                for p in cond_files:
+                    if not os.path.isfile(edir+"/"+p):
+                        print(p+" not found in :\n\t"+edir)
+                        to_keep=False
+                        break
+                if to_keep:
+                    print("Result to keep: "+edir)
+                    eres.append(edir)
+    return eres
+                    
