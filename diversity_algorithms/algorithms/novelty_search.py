@@ -113,7 +113,7 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
    return archive
 
 def generate_evolvability_samples(run_name, population, toolbox, evolvability_nb_samples, evolvability_period, gen, cxpb, mutpb):
-    if (evolvability_nb_samples>0) and (evolvability_period>0):
+    if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period==0):
         print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
