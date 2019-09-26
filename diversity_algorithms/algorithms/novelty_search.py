@@ -297,6 +297,8 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
         else:
             if(gen%100==0):
                 print(" %d "%(gen), end='', flush=True)
+            elif(gen%10==0):
+                print("+", end='', flush=True)
             else:
                 print(".", end='', flush=True)
 
