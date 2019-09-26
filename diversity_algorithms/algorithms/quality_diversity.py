@@ -21,35 +21,6 @@ from diversity_algorithms.algorithms.utils import *
 from diversity_algorithms.analysis.population_analysis import *
 from diversity_algorithms.analysis.data_utils import *
 
-# ### Unstructured
-
-#class NovArchive:
-#	"""Archive used to compute novelty scores."""
-#	def __init__(self, lbd, k=15):
-#		self.all_bd=lbd
-#		self.kdtree=KDTree(self.all_bd)
-#		self.k=k
-#		print("Archive constructor. size = %d"%(len(self.all_bd)))
-#		
-#	def update(self,new_bd):
-#		oldsize=len(self.all_bd)
-#		self.all_bd=self.all_bd + new_bd
-#		self.kdtree=KDTree(self.all_bd)
-#		print("Archive updated, old size = %d, new size = %d"%(oldsize,len(self.all_bd)))
-#	def get_nov(self,bd, population=[]):
-#		dpop=[]
-#		for ind in population:
-#			dpop.append(np.linalg.norm(np.array(bd)-np.array(ind.bd)))
-#		darch,ind=self.kdtree.query(np.array(bd),self.k)
-#		d=dpop+list(darch)
-#		d.sort()
-#		if (d[0]!=0):
-#			print("WARNING in novelty search: the smallest distance should be 0 (distance to itself). If you see it, you probably try to get the novelty with respect to a population your indiv is not in. The novelty value is then the sum of the distance to the k+1 nearest divided by k.")
-#		return sum(d[:self.k+1])/self.k # as the indiv is in the population, the first value is necessarily a 0.
-
-#	def size(self):
-#		return len(self.all_bd)
-
 
 def replace_if_better(oldind,newind,fit_index=0):
 	return oldind.fitness.values[fit_index] < newind.fitness.values[fit_index]

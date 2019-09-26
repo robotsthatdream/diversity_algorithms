@@ -29,13 +29,13 @@ class NovArchive:
         self.all_bd=lbd
         self.kdtree=KDTree(self.all_bd)
         self.k=k
-        print("Archive constructor. size = %d"%(len(self.all_bd)))
+        #print("Archive constructor. size = %d"%(len(self.all_bd)))
         
     def update(self,new_bd):
         oldsize=len(self.all_bd)
         self.all_bd=self.all_bd + new_bd
         self.kdtree=KDTree(self.all_bd)
-        print("Archive updated, old size = %d, new size = %d"%(oldsize,len(self.all_bd)))
+        #print("Archive updated, old size = %d, new size = %d"%(oldsize,len(self.all_bd)))
     def get_nov(self,bd, population=[]):
         dpop=[]
         for ind in population:
@@ -114,7 +114,7 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
 
 def generate_evolvability_samples(run_name, population, toolbox, evolvability_nb_samples, evolvability_period, gen, cxpb, mutpb):
     if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period==0):
-        print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
+        print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
         for ind in population:
@@ -208,13 +208,17 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
         
     archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
 
+    varian=variant.replace(",","")
+
+    
     for ind in population:
+
         if (emo):
-            if (variant == "NS+Fit"):
+            if (varian == "NS+Fit"):
                 ind.fitness.values = (ind.novelty, ind.fit)
-            elif (variant == "NS+BDDistP"):
+            elif (varian == "NS+BDDistP"):
                 ind.fitness.values = (ind.novelty, 0)
-            elif (variant == "NS+Fit+BDDistP"):
+            elif (varian == "NS+Fit+BDDistP"):
                 ind.fitness.values = (ind.novelty, ind.fit, 0)
             else:
                 print("WARNING: unknown variant: "+variant)
@@ -264,15 +268,15 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
 
         for ind in pq:
             if (emo):
-                if (variant == "NS+Fit"):
+                if (varian == "NS+Fit"):
                     ind.fitness.values = (ind.novelty, ind.fit)
-                elif (variant == "NS+BDDistP"):
+                elif (varian == "NS+BDDistP"):
                     if (ind.parent_bd is None):
                         bddistp=0
                     else:
                         bddistp=np.linalg.norm(np.array(ind.bd) - np.array(ind.parent_bd))
                     ind.fitness.values = (ind.novelty, bddistp)
-                elif (variant == "NS+Fit+BDDistP"):
+                elif (varian == "NS+Fit+BDDistP"):
                     if (ind.parent_bd is None):
                         bddistp=0
                     else:
@@ -288,7 +292,13 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
         if ((emo) and (offspring[0].fitness.values == offspring[0].fit)):
             print ("WARNING: EMO and the fitness is just the fitness !")
 
-        print("Gen %d"%(gen))
+        if (verbose):
+            print("Gen %d"%(gen))
+        else:
+            if(gen%100==0):
+                print(" %d "%(gen), end='', flush=True)
+            else:
+                print(".", end='', flush=True)
 
         
         # Select the next generation population
@@ -376,10 +386,12 @@ def NovES(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray")
         toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["DNN_MUT_PB_WB"], mutation_eta=params["DNN_MUT_ETA_WB"], mutation_rate_add_conn=params["DNN_MUT_PB_ADD_CONN"], mutation_rate_del_conn=params["DNN_MUT_PB_DEL_CONN"], mutation_rate_add_node=params["DNN_MUT_PB_ADD_NODE"], mutation_rate_del_node=params["DNN_MUT_PB_DEL_NODE"])
     else:
         raise RuntimeError("Unknown genotype type %s" % geno_type)
+
     #Common elements - selection and evaluation
-    if (params["VARIANT"] == "NS"):
+    variant=params["VARIANT"].replace(",","")
+    if (variant == "NS"): 
         toolbox.register("select", tools.selBest, fit_attr='novelty')
-    elif (params["VARIANT"] == "Fit"):
+    elif (variant == "Fit"):
         toolbox.register("select", tools.selBest, fit_attr='fitness')
     else:
         toolbox.register("select", tools.selNSGA2)

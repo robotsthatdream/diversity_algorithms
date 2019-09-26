@@ -1,6 +1,6 @@
 #!/usr/bin/python -w
 
-from data_utils import *
+from diversity_algorithms.analysis.data_utils import *
 
 def plot_points(points, bg="maze_hard.pbm", title=None):
     x,y = zip(*points)

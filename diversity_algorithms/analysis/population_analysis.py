@@ -66,6 +66,13 @@ def coverage(grid):
     nbc=reduce(lambda x,y:x*y,nb_bin,1)
     return float(np.count_nonzero(grid))/float(nbc)
 
+def get_coverage(min_x,max_x, nb_bin, x):
+    """Getting the coverage of a given set of points.
+    """
+    grid=build_grid(min_x, max_x, nb_bin)
+    update_grid(grid,min_x, max_x, x)
+    return coverage(grid)
+    
 def generate_uniform_grid(grid):
     """Generate a uniform grid with the same shape and same number of points than grid."""
     grid_uniform=np.ones(np.shape(grid))
