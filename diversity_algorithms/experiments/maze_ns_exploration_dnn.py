@@ -5,10 +5,8 @@
 import sys,getopt
 import numpy as np
 
-import gym, gym_fastsim
-
 from diversity_algorithms.environments import EvaluationFunctor
-from diversity_algorithms.controllers import SimpleNeuralController
+from diversity_algorithms.controllers import SimpleNeuralController, DNNController, DNN
 from diversity_algorithms.analysis import build_grid
 from diversity_algorithms.algorithms.stats import * 
 
@@ -26,7 +24,8 @@ set_creator(creator)
 
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
+#creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
+creator.create("Individual", DNN, fitness=creator.FitnessMax)
 #creator.create("Strategy", list, typecode="d")
 
 from diversity_algorithms.algorithms.novelty_search import NovES
@@ -48,7 +47,11 @@ if with_scoop:
 # Each worker gets a functor
 nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
 #env, controller = generate_gym_env_and_controller(params=nnparams)
-eval_dist_maze = EvaluationFunctor(env_name='FastsimSimpleNavigation-v0',controller_type=SimpleNeuralController,controller_params=nnparams)
+
+# Fixed NN
+#eval_dist_maze = EvaluationFunctor(controller_type=SimpleNeuralController,controller_params=nnparams,with_behavior_descriptor=True)
+# DNN
+eval_dist_maze = EvaluationFunctor(controller_type=DNNController,controller_params=nnparams,with_behavior_descriptor=True)
 
 # DO NOT pass the functor directly to futures.map -- this creates memory leaks
 # Wrapper that evals with the local functor
@@ -72,7 +75,6 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 	min_x=[0,0]
 	max_x=[600,600]
 	nb_bin=50
-
 	grid=build_grid(min_x, max_x, nb_bin)
 	grid_offspring=build_grid(min_x, max_x, nb_bin)
 	stats=None
@@ -80,12 +82,22 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
 	nbc=nb_bin**2
 	nbs=nbc*2 # min 2 samples per bin
 	evolvability_nb_samples=nbs
-        
-	params={"IND_SIZE":eval_dist_maze.controller.n_weights, 
+
+	params={"GENO_N_IN":eval_dist_maze.controller.n_in, 
+		"GENO_N_OUT":eval_dist_maze.controller.n_out, 
 		"CXPB":0, # No crossover
 		"MUTPB":1., # All offspring are mutated...
-		"INDPB":0.1, # ...but only 10% of parameters are mutated
-		"ETA_M": 15.0, # Eta parameter for polynomial mutation
+		"INDPB":0.1, # ...but only 10% of the weights are modified in mutated individuals
+		"ETA_M": 15.0, # Eta parameter for the polynomial mutation of weights and bias
+		# DNN parameters
+		# --------------
+		"DNN_MUT_PB_WB":0.1, # Probability to mutate each weight and bias
+		"DNN_MUT_ETA_WB": 15.0, # Eta parameter for the polynomial mutation of weights and bias
+		"DNN_MUT_PB_ADD_NODE": 0.1, # Probability to add a neuron
+		"DNN_MUT_PB_DEL_NODE": 0.01, # Probability to remove a neuron
+		"DNN_MUT_PB_ADD_CONN": 0.1, # Probability to add a connection
+		"DNN_MUT_PB_DEL_CONN": 0.01, # Probability to remove a connection
+		# --------------
 		"NGEN":nb_gen, # Number of generations
 		"MIN": -5, # Seems reasonable for NN weights
 		"MAX": 5, # Seems reasonable for NN weights
@@ -102,7 +114,6 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
                 "MAX_X": max_x, # not used by NS. It is just to keep track of it in the saved param file
                 "NB_BIN":nb_bin # not used by NS. It is just to keep track of it in the saved param file
 	}
-
 
 	# We use a different window size to compute statistics in order to have the same number of points for population and offspring statistics
 	window_population=nbs/params["MU"]
@@ -131,7 +142,7 @@ def launch_nov(pop_size, nb_gen, evolvability_period=0, dump_period_pop=10, dump
                 pool=None
                 
 	dump_params(params,run_name)
-	pop, archive, logbook = NovES(eval_with_functor, params, pool, run_name, geno_type="realarray")
+	pop, archive, logbook = NovES(eval_with_functor, params, pool, run_name, geno_type="dnn")
 	dump_pop(pop,nb_gen,run_name)
 	dump_logbook(logbook,nb_gen,run_name)
 	dump_archive(archive,nb_gen,run_name)

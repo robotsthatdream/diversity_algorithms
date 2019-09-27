@@ -2,7 +2,9 @@
 
 # This set of functions tries to characterize set of individuals
 
+import random
 import numpy as np
+import numpy.ma as ma
 import math as m
 from functools import *
 from deap import tools, base, algorithms
@@ -45,12 +47,49 @@ def update_grid(grid,min_x, max_x, x):
         #print("Adding a point to "+str(ix))
         grid[tuple(ix)]+=1
 
+def entropy(grid):
+    """Return the entropy of the grid (close to 1 == uniform)."""
+    nb_bin=np.shape(grid)
+    nbc=reduce(lambda x,y:x*y,nb_bin,1)
+    n=np.sum(grid)
+    #print("Number of cells: %d, number of points: %d"%(nbc, n))
+    if (n==0):
+        return float('NaN')
+    entropy=np.array(grid)
+    entropy=entropy/float(n)
+    entropy=entropy*np.log(entropy)
+    return -1.*float(np.sum(entropy))/float(np.log(nbc))
+
 def coverage(grid):
     """Return the coverage, the ratio of non zero cells on the total number of cells."""
     nb_bin=np.shape(grid)
     nbc=reduce(lambda x,y:x*y,nb_bin,1)
     return float(np.count_nonzero(grid))/float(nbc)
 
+def get_coverage(min_x,max_x, nb_bin, x):
+    """Getting the coverage of a given set of points.
+    """
+    grid=build_grid(min_x, max_x, nb_bin)
+    update_grid(grid,min_x, max_x, x)
+    return coverage(grid)
+    
+def generate_uniform_grid(grid):
+    """Generate a uniform grid with the same shape and same number of points than grid."""
+    grid_uniform=np.ones(np.shape(grid))
+    nb_bin=np.shape(grid)    
+    nbc=reduce(lambda x,y:x*y,nb_bin,1)
+    nbsamples=np.sum(grid)
+    grid_uniform=nbsamples/nbc*grid_uniform
+    if (nbsamples<nbc):
+        print("Warning, too few samples to estimate coverage: nbsamples=%d, nbcells=%d"%(nbsamples,nbc))
+    return grid_uniform
+
+def jensen_shannon_distance(grid1,grid2):
+    grid3=grid1+grid2
+    grid4=grid1*np.log(2*grid1/grid3)+grid2*np.log(2*grid2/grid3)
+    grid5=ma.masked_invalid(grid4)
+    return grid5.sum()
+    
 def radius(x):
     """Return statistics about the distances between the points in x.
 
@@ -91,7 +130,8 @@ def sample_from_pop(population, toolbox, lambda_, cxpb, mutpb):
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit[0] 
-        ind.fitness.bd = fit[1]
+        ind.bd = fit[1]
+        ind.evolvability_samples=None # SD: required, otherwise, the memory usage explodes... I do not understand why yet.
         
     return offspring
 
@@ -104,11 +144,28 @@ def density(grid):
     print("TODO...")
     pass
 
-def evolvability_specialization(population):
-    print("TODO...")
-    pass
-    
 
 if __name__ == '__main__':
-    # Some tests
-    pass
+
+
+    random.seed()
+    
+    min_x=[0,0]
+    max_x=[600,600]
+    nb_bin=10
+    grid=build_grid(min_x, max_x, nb_bin)
+    nbpts=10000
+    x=[[random.uniform(min_x[0], max_x[0]), random.uniform(min_x[1], max_x[1])] for p in range(nbpts)]
+    update_grid(grid,min_x, max_x, x)
+
+    grid2=build_grid(min_x, max_x, nb_bin)
+    x2=[[random.uniform(min_x[0], max_x[0]/2), random.uniform(min_x[1], max_x[1]/2)] for p in range(nbpts)]
+    update_grid(grid2,min_x, max_x, x2)
+
+
+    uniform_grid=generate_uniform_grid(grid)
+    print("Coverage of grid: %.2f, coverage of the uniform grid: %.2f of grid2: %.2f"%(coverage(grid), coverage(uniform_grid), coverage(grid2)))
+    print("Jensen-Shannon distance between the 2: %f"%(jensen_shannon_distance(grid,uniform_grid)))
+    print("Jensen-Shannon distance between grid2 and uniform grid: %f"%(jensen_shannon_distance(grid2,uniform_grid)))
+        
+    
