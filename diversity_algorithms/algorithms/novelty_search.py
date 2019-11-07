@@ -30,7 +30,10 @@ class NovArchive:
         self.kdtree=KDTree(self.all_bd)
         self.k=k
         #print("Archive constructor. size = %d"%(len(self.all_bd)))
-        
+
+    def ready(self):
+        return self.size()>self.k
+    
     def update(self,new_bd):
         oldsize=len(self.all_bd)
         self.all_bd=self.all_bd + new_bd
@@ -128,6 +131,7 @@ def generate_evolvability_samples(run_name, population, toolbox, evolvability_nb
         print("")
 
 def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, pop1label="population", pop2label="offspring", archive=None, logbook=None):
+    #print("Dumping data. Gen="+str(gen)+" dump_period_bd="+str(dump_period_bd)+" dump_period_pop="+str(dump_period_pop))
     if(dump_period_bd and (gen % dump_period_bd == 0)): # Dump behavior descriptors
         dump_bd=open(run_name+"/bd_%04d_%s.log"%(gen,pop1label),"w")
         for ind in pop1:
