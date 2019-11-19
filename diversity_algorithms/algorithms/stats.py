@@ -11,6 +11,12 @@ class Perc:
     def __call__(self,l):
         return numpy.percentile(l,self.val)
 
+class FitVal:
+    def __init__(self,num):
+        self.num=num
+    def __call__(self,l):
+        return l.fitness.values[self.num]
+
 def get_fit_val(x):
     return x.fitness.values
 
@@ -178,13 +184,20 @@ def get_stats_bd_dist_to_parent(x):
         return nbancestors, nbbehclone, len(dnc), -1, -1, -1, -1, -1, -1
     
 # Fitness + novelty + coverage
-def get_stat_fit_nov_cov(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bin=None, gen_window_global=10):
+def get_stat_fit_nov_cov(grid, prefix="", indiv=False, min_x=None, max_x=None,nb_bin=None, gen_window_global=10, fitness_values=1):
+    # fitness_values says what this parameter looks like: either a scalar (no matter its value) or a tuple (the values are not important, but the size is)
+
     stat_fnc = tools.Statistics()
     lbd_global=[]
-    stat_fnc.register(prefix+"fitness",get_stats_generic, get_fit_val)
+    if (isinstance(fitness_values, int)):
+        stat_fnc.register(prefix+"fitness",get_stats_generic, get_fit_val)
+    else:
+        for i in range(len(fitness_values)):
+            stat_fnc.register(prefix+"fitness_%d"%(i),get_stats_generic, FitVal(i))
+
     stat_fnc.register(prefix+"novelty",get_stats_generic, get_nov)
-    stat_fnc.register(prefix+"bd_dist_to_parent",get_stats_bd_dist_to_parent)
-    stat_fnc.register(prefix+"parent_vs_offspring_selection",get_stats_count_generic, get_am_parent, 1)
+    #stat_fnc.register(prefix+"bd_dist_to_parent",get_stats_bd_dist_to_parent)
+    #stat_fnc.register(prefix+"parent_vs_offspring_selection",get_stats_count_generic, get_am_parent, 1)
     if (grid is not None):
         stat_fnc.register(prefix+"glob_cov",get_updated_coverage,grid, lbd_global, min_x=min_x, max_x=max_x, gen_window=gen_window_global)
         if (indiv):

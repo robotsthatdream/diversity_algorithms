@@ -5,6 +5,29 @@ import subprocess
 import dill
 import pickle
 
+from diversity_algorithms.analysis.population_analysis import *
+
+class Fitness:
+        def __init__(self,fit):
+            if (fit is None):
+                self.values=None
+                self.valid=False
+            else:
+                self.values=fit
+                self.valid=True
+        
+class Indiv:
+       def __init__(self, g, fit, bd):
+           self=list(g)
+           self.fitness=Fitness(fit)
+           self.bd=bd
+       def __len__(self):
+           return len(self.g)
+       def __getitem__(self,i):
+           return self.g[i]
+       def __setitem__(self,i,v):
+           self.g[i]=v
+
 def generate_exp_name(name=""):
     d=datetime.datetime.today()
     if(name!=""):
@@ -74,6 +97,56 @@ def dump_pop(pop, gen, run_name="runXXX", prefix="pop"):
         pass
     np.savez(run_name+"/"+prefix+"_gen%d.npz" % gen, **out_dict) 
 
+def load_pop(dumpfile):
+    pop_dict=np.load(dumpfile)
+    pop=[]
+    for i in range(pop_dict["size"]):
+        if ("fitness_%d"%(i) in pop_dict.keys()):
+            fit=pop_dict["fitness_%d"%(i)]
+        else:
+            continue
+            fit=None
+        if ("bd_%d"%(i) in pop_dict.keys()):
+            bd=pop_dict["bd_%d"%(i)]
+        else:
+            continue
+            bd=None
+        ind=Indiv(pop_dict["geno_%d"%(i)], fit,bd)
+        if ("novelty_%d"%(i) in pop_dict.keys()):
+            ind.novelty=pop_dict["novelty_%d"%(i)]
+        pop.append(ind)
+    return pop
+
+def load_pop_toolbox(dumpfile, toolbox):
+    pop_dict=np.load(dumpfile)
+    pop=[]
+    for i in range(pop_dict["size"]):
+        if ("fitness_%d"%(i) in pop_dict.keys()):
+            fit=pop_dict["fitness_%d"%(i)]
+        else:
+            continue
+            fit=None
+        if ("bd_%d"%(i) in pop_dict.keys()):
+            bd=pop_dict["bd_%d"%(i)]
+        else:
+            continue
+            bd=None
+
+
+        geno=pop_dict["geno_%d"%(i)]
+
+        ind=toolbox.individual()
+        for i in range(len(geno)):
+            ind[i]=geno[i]
+
+        ind.fitness=Fitness(fit)
+        ind.bd=bd
+
+        if ("novelty_%d"%(i) in pop_dict.keys()):
+            ind.novelty=pop_dict["novelty_%d"%(i)]
+        pop.append(ind)
+    return pop
+
 def dump_archive(archive, gen, run_name="runXXX"):
     out_dict = {"gen": gen, "size": archive.size()}
     for (i,ind) in enumerate(archive.all_bd):
@@ -110,6 +183,8 @@ def dump_params(params, run_name="runXXX"):
     #params["STATS"]=stat
 
 def dump_logbook(logbook,gen,run_name="runXXX"):
+    if (logbook is None):
+        return
     out_dict = {}
     for k in logbook.header:
         out_dict[k]=logbook.select(k)
@@ -118,3 +193,41 @@ def dump_logbook(logbook,gen,run_name="runXXX"):
     except OSError:
         pass
     np.savez(run_name+"/logbook_gen%d.npz" % gen, **out_dict) 
+
+def generate_evolvability_samples(run_name, population, toolbox, evolvability_nb_samples, evolvability_period, gen, cxpb, mutpb):
+    if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period==0):
+        print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
+        print("sampling for evolvability: ",end='', flush=True)
+        ig=0
+        for ind in population:
+            print(".", end='', flush=True)
+            ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
+            dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
+            for inde in ind.evolvability_samples:
+                dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")
+            dump_bd_evol.close()
+            ig+=1
+        print("")
+
+def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, pop1label="population", pop2label="offspring", archive=None, logbook=None):
+    #print("Dumping data. Gen="+str(gen)+" dump_period_bd="+str(dump_period_bd)+" dump_period_pop="+str(dump_period_pop))
+    if(dump_period_bd and (gen % dump_period_bd == 0)): # Dump behavior descriptors
+        dump_bd=open(run_name+"/bd_%04d_%s.log"%(gen,pop1label),"w")
+        for ind in pop1:
+            dump_bd.write(" ".join(map(str,ind.bd))+"\n")
+        dump_bd.close()
+        if (pop2 is not None):
+            dump_bd=open(run_name+"/bd_%04d_%s.log"%(gen,pop2label),"w")
+            for ind in pop2:
+                dump_bd.write(" ".join(map(str,ind.bd))+"\n")
+            dump_bd.close()
+    
+    if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump populatio    if dump_period_pop:
+        if(pop1 is not None):
+            dump_pop(pop1, gen, run_name, pop1label)
+        if(pop2 is not None):
+            dump_pop(pop2, gen,run_name, pop2label)
+        if (archive is not None):
+            dump_archive(archive, gen,run_name)
+        if (logbook is not None):
+            dump_logbook(logbook, gen,run_name)

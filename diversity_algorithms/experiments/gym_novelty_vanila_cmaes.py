@@ -43,15 +43,6 @@ eval_gym = EvaluationFunctor(controller_type=SimpleNeuralController,controller_p
 def eval_with_functor(g):
 	return eval_gym(g)
 
-class Fitness:
-        def __init__(self,fit):
-                self.values=fit
-                self.valid=True
-class Indiv:
-       def __init__(self, g, fit, bd):
-               self.g=g
-               self.fitness=Fitness(fit)
-               self.bd=bd
 
 def generate_evolvability_samples_cmaes(run_name, es, evolvability_nb_samples, evolvability_period, gen):
     if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period==0):
@@ -73,7 +64,7 @@ def launch_cmaes(nb_samples, run_name, dump_period_pop, dump_period_bd, variant=
         :param variant: the variant to launch, can be "NS" or "DM" (fitness = - distance to current model)
         """
 
-        if (variant not in ["NS", "DM"]):
+        if (variant not in ["NS", "DM", "NS_mu1"]):
                 print("Invalid variant: "+variant)
 
         
@@ -106,6 +97,10 @@ def launch_cmaes(nb_samples, run_name, dump_period_pop, dump_period_bd, variant=
         center=[0]*eval_gym.controller.n_weights
         sigma=5./3. #stdev, min-max of -5;5, which suggests a value of 5/3 for the stdev (see http://cma.gforge.inria.fr/apidocs-pycma/cma.evolution_strategy.CMAEvolutionStrategy.html) 
         
+        if (variant == "NS_mu1"):
+                opts = cma.CMAOptions()
+                opts.set('CMA_mu', 1)		
+
         es = cma.CMAEvolutionStrategy(center, sigma)
         i=0
         j=0
@@ -136,7 +131,7 @@ def launch_cmaes(nb_samples, run_name, dump_period_pop, dump_period_bd, variant=
                         print("Gen=%d, min dist_to_model=%f, max dist_to_model=%f, min fit=%f, max fit=%f (evals remaining=%d)"%(gen,min(dm_fit),max(dm_fit), min(fit), max(fit), nb_samples-i))
                         
                         
-                if (variant == "NS"):
+                if (variant in ["NS", "NS_mu1"]):
                         
                         if ((archive is not None) and (archive.ready())):
                                 update_model=True

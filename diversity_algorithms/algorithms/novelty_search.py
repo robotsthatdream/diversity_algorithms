@@ -54,7 +54,7 @@ class NovArchive:
         return len(self.all_bd)
     
 def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _lambda=6, verbose=False):
-   """"Update the novelty criterion (including archive update) 
+   """Update the novelty criterion (including archive update) 
 
    Implementation of novelty search following (Gomes, J., Mariano, P., & Christensen, A. L. (2015, July). Devising effective novelty search algorithms: A comprehensive empirical study. In Proceedings of GECCO 2015 (pp. 943-950). ACM.).
    :param population: is the set of indiv for which novelty needs to be computed
@@ -115,43 +115,6 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
 
    return archive
 
-def generate_evolvability_samples(run_name, population, toolbox, evolvability_nb_samples, evolvability_period, gen, cxpb, mutpb):
-    if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period==0):
-        print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
-        print("sampling for evolvability: ",end='', flush=True)
-        ig=0
-        for ind in population:
-            print(".", end='', flush=True)
-            ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
-            dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
-            for inde in ind.evolvability_samples:
-                dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")
-            dump_bd_evol.close()
-            ig+=1
-        print("")
-
-def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, pop1label="population", pop2label="offspring", archive=None, logbook=None):
-    #print("Dumping data. Gen="+str(gen)+" dump_period_bd="+str(dump_period_bd)+" dump_period_pop="+str(dump_period_pop))
-    if(dump_period_bd and (gen % dump_period_bd == 0)): # Dump behavior descriptors
-        dump_bd=open(run_name+"/bd_%04d_%s.log"%(gen,pop1label),"w")
-        for ind in pop1:
-            dump_bd.write(" ".join(map(str,ind.bd))+"\n")
-        dump_bd.close()
-        if (pop2 is not None):
-            dump_bd=open(run_name+"/bd_%04d_%s.log"%(gen,pop2label),"w")
-            for ind in pop2:
-                dump_bd.write(" ".join(map(str,ind.bd))+"\n")
-            dump_bd.close()
-    
-    if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump populatio    if dump_period_pop:
-        if(pop1 is not None):
-            dump_pop(pop1, gen, run_name, pop1label)
-        if(pop2 is not None):
-            dump_pop(pop2, gen,run_name, pop2label)
-        if (archive is not None):
-            dump_archive(archive, gen,run_name)
-        if (logbook is not None):
-            dump_logbook(logbook, gen,run_name)
 
 
 ## DEAP compatible algorithm

@@ -124,11 +124,11 @@ def sample_from_pop(population, toolbox, lambda_, cxpb, mutpb):
     """
     # Vary the population
     offspring = algorithms.varOr(population, toolbox, lambda_, cxpb, mutpb)
-    
+    #for of in offspring:
+    #    print("Offspring: "+str(of))
     # Evaluate the individuals with an invalid fitness
-    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-    for ind, fit in zip(invalid_ind, fitnesses):
+    fitnesses = toolbox.map(toolbox.evaluate, offspring)
+    for ind, fit in zip(offspring, fitnesses):
         ind.fitness.values = fit[0] 
         ind.bd = fit[1]
         ind.evolvability_samples=None # SD: required, otherwise, the memory usage explodes... I do not understand why yet.
@@ -144,6 +144,13 @@ def density(grid):
     print("TODO...")
     pass
 
+def cumul_distance(x):
+    """Returns the sum of the distances of all pairs of individuals."""
+    cumul=0
+    for i in range(len(x)):
+        for j in range(i+1,len(x)):
+            cumul+=np.linalg.norm(np.array(x[i].bd)-np.array(x[j].bd))
+    return cumul
 
 if __name__ == '__main__':
 

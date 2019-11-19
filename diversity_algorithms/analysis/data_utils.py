@@ -23,6 +23,9 @@ re_bdfile = re.compile("bd_(....)_offspring.log")
 re_bdfile_model = re.compile("bd_evol_model_gen(....).log")
 re_bdfile_old = re.compile("bd_(....).log")
 re_bdpopfile = re.compile("bd_pop_(....).log")
+re_bdpopulationfile = re.compile("bd_(....)_population.log")
+re_bdall_samplesfile = re.compile("bd_(....)_all_samples.log")
+re_bdpopfile = re.compile("bd_pop_(....).log")
 re_genfile = re.compile("pop_gen(.+).npz")
 
 
@@ -47,6 +50,12 @@ def get_files_per_gen(regex, data_dirs=".", gens=None): #Default : local dir, al
 
 def get_bd_evolvability_files_per_gen(data_dirs=".", gens=None):
     return get_files_per_gen(re_bd_evolvability_file, data_dirs, gens)
+
+def get_bdfiles_population_per_gen(data_dirs=".", gens=None):
+    return get_files_per_gen(re_bdpopulationfile, data_dirs, gens)
+
+def get_bdfiles_all_samples_per_gen(data_dirs=".", gens=None):
+    return get_files_per_gen(re_bdall_samplesfile, data_dirs, gens)
 
 def get_bdfiles_per_gen(data_dirs=".", gens=None):
     return get_files_per_gen(re_bdfile, data_dirs, gens)
