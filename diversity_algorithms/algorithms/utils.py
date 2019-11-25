@@ -79,7 +79,14 @@ def dump_end_of_exp(run_name):
 def dump_pop(pop, gen, run_name="runXXX", prefix="pop"):
     out_dict = {"gen": gen, "size": len(pop)}
     for (i,ind) in enumerate(pop):
-        out_dict["geno_%d" % i] = np.array(ind)
+        if(hasattr(ind,'strategy')):
+            out_dict["centroid_%d" % i] = np.array(ind.strategy.centroid)
+            out_dict["C_%d" % i] = np.array(ind.strategy.C)
+            out_dict["sigma_%d" % i] = np.array(ind.strategy.sigma)
+            out_dict["w_%d" % i] = np.array(ind.strategy.w)
+            out_dict["ccov_%d" % i] = np.array(ind.strategy.ccov)
+        else:
+            out_dict["geno_%d" % i] = np.array(ind)
         if(ind.fitness.valid):
             out_dict["fitness_%d" % i] = ind.fitness.values
             if(hasattr(ind,'novelty')):
@@ -98,7 +105,7 @@ def dump_pop(pop, gen, run_name="runXXX", prefix="pop"):
     np.savez(run_name+"/"+prefix+"_gen%d.npz" % gen, **out_dict) 
 
 def load_pop(dumpfile):
-    pop_dict=np.load(dumpfile)
+    pop_dict=np.load(dumpfile, allow_pickle=True)
     pop=[]
     for i in range(pop_dict["size"]):
         if ("fitness_%d"%(i) in pop_dict.keys()):
@@ -111,14 +118,23 @@ def load_pop(dumpfile):
         else:
             continue
             bd=None
-        ind=Indiv(pop_dict["geno_%d"%(i)], fit,bd)
+        if ("centroid_%d"%(i) in pop_dict.keys()):
+            sigma=pop_dict["sigma_%d"%(i)][0]
+            w=pop_dict["w_%d"%(i)]
+            ind=generate_CMANS(creator.individual, CMANS_Strategy_C_rank_one, pop_dict["centroid_%d"%(i)], pop_dict["min"], pop_dict["max"], sigma, w)
+            ind.set_centroid(pop_dict["centroid_%d"%(i)])
+            ind.set_C(pop_dict["C_%d"%(i)])
+            ind.fitness=Fitness(fit)
+            ind.bd=bd
+        else:
+            ind=Indiv(pop_dict["geno_%d"%(i)], fit,bd)
         if ("novelty_%d"%(i) in pop_dict.keys()):
             ind.novelty=pop_dict["novelty_%d"%(i)]
         pop.append(ind)
     return pop
 
 def load_pop_toolbox(dumpfile, toolbox):
-    pop_dict=np.load(dumpfile)
+    pop_dict=np.load(dumpfile, allow_pickle=True)
     pop=[]
     for i in range(pop_dict["size"]):
         if ("fitness_%d"%(i) in pop_dict.keys()):
@@ -133,11 +149,19 @@ def load_pop_toolbox(dumpfile, toolbox):
             bd=None
 
 
-        geno=pop_dict["geno_%d"%(i)]
+        if ("centroid_%d"%(i) in pop_dict.keys()):
+            ind=toolbox.individual()
+            #generate_CMANS(creator.individual, CMANS_Strategy_C_rank_one, pop_dict["centroid_%d"%(i)], pop_dict["min"], pop_dict["max"], sigma, w)
+            ind.set_centroid(pop_dict["centroid_%d"%(i)])
+            ind.strategy.C = np.array(pop_dict["C_%d"%(i)])
+            ind.strategy.sigma = pop_dict["sigma_%d"%(i)][0]
+            ind.strategy.w = pop_dict["w_%d"%(i)]            
+        else:
+            geno=pop_dict["geno_%d"%(i)]
 
-        ind=toolbox.individual()
-        for i in range(len(geno)):
-            ind[i]=geno[i]
+            ind=toolbox.individual()
+            for i in range(len(geno)):
+                ind[i]=geno[i]
 
         ind.fitness=Fitness(fit)
         ind.bd=bd
@@ -194,20 +218,34 @@ def dump_logbook(logbook,gen,run_name="runXXX"):
         pass
     np.savez(run_name+"/logbook_gen%d.npz" % gen, **out_dict) 
 
-def generate_evolvability_samples(run_name, population, toolbox, evolvability_nb_samples, evolvability_period, gen, cxpb, mutpb):
+def generate_evolvability_samples(run_name, population, evolvability_nb_samples, evolvability_period, gen, toolbox, cxpb=0, mutpb=0):
+    """Generates a sample of individuals from the given population. 
+
+    Generates a sample of individuals from the given population. It either relies on the toolbox (with the crossover and mutation probabilities) or on the strategy (if the individuals have one) to generate the points. 
+    """
     if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period==0):
         print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
         for ind in population:
             print(".", end='', flush=True)
-            ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
+            if (hasattr(ind, 'strategy')):
+                ind.evolvability_samples=ind.strategy.generate_samples(evolvability_nb_samples)
+                fitnesses = toolbox.map(toolbox.evaluate, ind.evolvability_samples)
+                for indes, fit in zip(ind.evolvability_samples, fitnesses):
+                    indes.fitness.values = fit[0] 
+                    indes.bd = fit[1]
+                    indes.evolvability_samples=None # SD: required, otherwise, the memory usage explodes... I do not understand why yet.
+                
+            else:
+                    ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
             dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
             for inde in ind.evolvability_samples:
                 dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")
             dump_bd_evol.close()
             ig+=1
         print("")
+
 
 def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, pop1label="population", pop2label="offspring", archive=None, logbook=None):
     #print("Dumping data. Gen="+str(gen)+" dump_period_bd="+str(dump_period_bd)+" dump_period_pop="+str(dump_period_pop))
