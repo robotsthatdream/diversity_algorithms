@@ -29,7 +29,7 @@ set_creator(creator)
 
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax, strategy=None)
+creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax)
 #creator.create("Strategy", list, typecode="d")
 
 from diversity_algorithms.algorithms.novelty_search import NovES
