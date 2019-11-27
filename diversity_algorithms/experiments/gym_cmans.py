@@ -24,13 +24,13 @@ import math
 # Yes, this is ugly. This is DEAP's fault.
 # See https://github.com/DEAP/deap/issues/57
 
-from diversity_algorithms.algorithms.novelty_search import set_creator
-set_creator(creator)
+from diversity_algorithms.algorithms.cma_ns import set_creator_cmans
+set_creator_cmans(creator)
 
 #from diversity_algorithms.algorithms.novelty_search import NovES
 from diversity_algorithms.algorithms.cma_ns import CMA_NS, Indiv_CMANS
 from diversity_algorithms.algorithms.utils import *
-
+ 
 creator.create("MyFitness", base.Fitness, weights=(1.0,1.0))
 creator.create("Individual", Indiv_CMANS, typecode="d", fitness=creator.MyFitness, strategy=None)
 #creator.create("Strategy", list, typecode="d")
@@ -57,7 +57,7 @@ def eval_with_functor(g):
 
 
 
-def launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1, variant="NS"):
+def launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1, variant="CMANS"):
 	"""Launch a novelty search run on the maze
 	
 	Launch a novelty search run on the maze:

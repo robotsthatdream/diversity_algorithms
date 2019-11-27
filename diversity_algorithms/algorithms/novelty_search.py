@@ -7,7 +7,6 @@ import datetime
 import os
 import array
 
-
 from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
 
 creator = None
@@ -36,18 +35,25 @@ class NovArchive:
     
     def update(self,new_bd):
         oldsize=len(self.all_bd)
+        if (oldsize>0):
+            for bd in new_bd:
+                assert len(bd)==len(self.all_bd[0]), "update archive, bd of different sizes: len(bd)=%d, len(all_bd[0])=%d"%(len(bd),len(all_bd[0]))
+
         self.all_bd=self.all_bd + new_bd
         self.kdtree=KDTree(self.all_bd)
         #print("Archive updated, old size = %d, new size = %d"%(oldsize,len(self.all_bd)))
     def get_nov(self,bd, population=[]):
+        if (len(population)==0):
+            print("WARNING: get_nov with an empty population")
         dpop=[]
         for ind in population:
+            assert len(bd)==len(ind.bd), "get_nov, bd of different sizes: len(bd)=%d, len(ind.bd)=%d"%(len(bd),len(ind.bd))
             dpop.append(np.linalg.norm(np.array(bd)-np.array(ind.bd)))
         darch,ind=self.kdtree.query(np.array(bd),self.k)
         d=dpop+list(darch)
         d.sort()
         if (d[0]!=0):
-            print("WARNING in novelty search: the smallest distance should be 0 (distance to itself). If you see it, you probably try to get the novelty with respect to a population your indiv is not in. The novelty value is then the sum of the distance to the k+1 nearest divided by k.")
+            print("WARNING in novelty search: the smallest distance should be 0 (distance to itself). If you see it, you probably try to get the novelty with respect to a population your indiv is not in. The novelty value is then the sum of the distance to the k+1 nearest divided by k. d[0]=%f"%(d[0]))
         return sum(d[:self.k+1])/self.k # as the indiv is in the population, the first value is necessarily a 0.
 
     def size(self):

@@ -21,8 +21,8 @@ from os import path
 # Yes, this is ugly. This is DEAP's fault.
 # See https://github.com/DEAP/deap/issues/57
 
-from diversity_algorithms.algorithms.cma_ns import set_creator
-set_creator(creator)
+from diversity_algorithms.algorithms.cma_ns import set_creator_cmans
+set_creator_smans(creator)
 
 nbfitobj=2 #len(pop[0].fitness.values)
 

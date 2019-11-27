@@ -13,7 +13,7 @@ import array
 #from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
 
 creator = None
-def set_creator(cr):
+def set_creator_cmans(cr):
     global creator
     creator = cr
 
@@ -48,7 +48,7 @@ class CMANS_Strategy_C_rank_one:
         self.centroid = np.array(centroid)
         self.C = np.identity(len(centroid))
         self.sigma=sigma
-        self.w=w
+        self.w=[ww/sum(w) for ww in w] # weights must sum to one
         self.ccov=ccov
         self.muw=1./sum([ww**2 for ww in w])
         self.lambda_=lambda_
@@ -70,6 +70,7 @@ class CMANS_Strategy_C_rank_one:
 
     def update(self,population):
         # in this version, the centroid is not adapted
+        #print("Before update of C: min=%f max=%f"%(self.C.min(), self.C.max()))
         sorted_pop = sorted(population, key=attrgetter("novelty"), reverse=True)
 
         y = [(s.get_centroid() - self.centroid)/self.sigma for s in sorted_pop[:self.mu]]
@@ -80,7 +81,8 @@ class CMANS_Strategy_C_rank_one:
         #print("yw.ywT="+str(ywywT))
         self.C = (1.-self.ccov)*self.C + self.ccov * self.muw * ywywT
         #print("Updated C: "+str(self.C))
-
+        #print("After update of C: min=%f max=%f"%(self.C.min(), self.C.max()))
+        
 def generate_CMANS(icls, scls, size, xmin, xmax, sigma, w, lambda_=100, ccov=0.2):
     centroid = [random.uniform(xmin, xmax) for _ in range(size)]
     ind = icls(centroid)
@@ -156,12 +158,11 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
             all_samples+=samples
 
         # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in all_samples if not ind.fitness.valid]
-        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-        for ind, fit in zip(invalid_ind, fitnesses):
+        fitnesses = toolbox.map(toolbox.evaluate, all_samples)
+        for ind, fit in zip(all_samples, fitnesses):
             ind.fit = fit[0]
             ind.bd=listify(fit[1])
-
+            
         archive=updateNovelty(all_samples,all_samples,archive,k,add_strategy,lambdaNov)
 
         # Compute the fitness values for each seed: uniformity and cumulated novelty

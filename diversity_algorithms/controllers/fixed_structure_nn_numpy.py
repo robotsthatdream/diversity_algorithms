@@ -69,6 +69,12 @@ class SimpleNeuralControllerNumpy():
         """
         Set all network parameters from a single array
         """
+        if (np.nan in flat_parameters):
+            print("WARNING: NaN in the parameters of the NN: "+str(list(flat_parameters)))
+        if (max(flat_parameters)>1000):
+            print("WARNING: max value of the parameters of the NN >1000: "+str(list(flat_parameters)))
+            
+                
         i = 0 # index
         to_set = []
         self.weights = list()
