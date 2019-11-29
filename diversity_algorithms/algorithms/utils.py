@@ -18,7 +18,7 @@ class Fitness:
         
 class Indiv:
        def __init__(self, g, fit, bd):
-           self=list(g)
+           self.g=list(g)
            self.fitness=Fitness(fit)
            self.bd=bd
        def __len__(self):
@@ -154,14 +154,15 @@ def load_pop_toolbox(dumpfile, toolbox):
             #generate_CMANS(creator.individual, CMANS_Strategy_C_rank_one, pop_dict["centroid_%d"%(i)], pop_dict["min"], pop_dict["max"], sigma, w)
             ind.set_centroid(pop_dict["centroid_%d"%(i)])
             ind.strategy.C = np.array(pop_dict["C_%d"%(i)])
-            ind.strategy.sigma = pop_dict["sigma_%d"%(i)][0]
+            ind.strategy.sigma = pop_dict["sigma_%d"%(i)]
             ind.strategy.w = pop_dict["w_%d"%(i)]            
         else:
-            geno=pop_dict["geno_%d"%(i)]
+            ind=Indiv(pop_dict["geno_%d"%(i)], fit,bd)
+            #geno=pop_dict["geno_%d"%(i)]
 
-            ind=toolbox.individual()
-            for i in range(len(geno)):
-                ind[i]=geno[i]
+            #ind=toolbox.individual()
+            #for i in range(len(geno)):
+            #    ind.g[i]=geno[i]
 
         ind.fitness=Fitness(fit)
         ind.bd=bd

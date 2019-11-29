@@ -68,11 +68,14 @@ class CMANS_Strategy_C_rank_one:
     def generate(self):
         return self.generate_samples(self.lambda_)
 
-    def update(self,population):
+    def update(self,population, variant="CMANS"):
         # in this version, the centroid is not adapted
         #print("Before update of C: min=%f max=%f"%(self.C.min(), self.C.max()))
-        sorted_pop = sorted(population, key=attrgetter("novelty"), reverse=True)
-
+        if (variant=="CMANS"):
+            sorted_pop = sorted(population, key=attrgetter("novelty"), reverse=True)
+        elif (variant=="CMANSD"):
+            sorted_pop = sorted(population, key=attrgetter("dist_to_model"), reverse=True)
+            
         y = [(s.get_centroid() - self.centroid)/self.sigma for s in sorted_pop[:self.mu]]
         #print("Len y=%d mu=%d muw=%f"%(len(y), self.mu, self.muw))
         yw=np.array([sum([self.w[i]*y[i] for i in range(self.mu)])])
@@ -92,7 +95,7 @@ def generate_CMANS(icls, scls, size, xmin, xmax, sigma, w, lambda_=100, ccov=0.2
 
 ## DEAP compatible algorithm
 def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
-                          stats=None, stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX", variant="NS"):
+                          stats=None, stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX", variant="CMANS"):
     """CMA-NS algorithm
  
     CMA-NS algorithm. Parameters:
@@ -170,11 +173,12 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
             #print("s="+str(s)+ " population[s]="+str(population[s]))
             cumul=0
             for i in samples_per_seed[s]:
+                i.dist_to_model=np.linalg.norm(np.array(population[s].bd)-np.array(i.bd))
                 cumul+=i.novelty
             population[s].fitness.values=(cumul_distance(samples_per_seed[s]), cumul)
             population[s].novelty=-1 # to simplify stats
 
-            population[s].strategy.update(samples_per_seed[s])
+            population[s].strategy.update(samples_per_seed[s], variant)
             #print("Cumul distance: %f, cumul novelty: %f"%(population[s].fitness.values[0], population[s].fitness.values[1]))
 
         # Select the seeds to survive with NSGA-2
@@ -237,7 +241,7 @@ def CMA_NS(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"
             "EVOLVABILITY_PERIOD": 100, # Period to estimate evolvability
             "DUMP_PERIOD_POP": 10, # Period to dump population
             "DUMP_PERIOD_BD": 1, # Period to dump behavior descriptors
-            "VARIANT": "NS" # "NS", "Fit", "NS+Fit", "NS+BDDistP", "NS+Fit+BDDistP" or any variant with "," at the end ("NS," for instance) if selection within the offspring only ("," selection scheme of ES) 
+            "VARIANT": "CMANS" # "NS", "Fit", "NS+Fit", "NS+BDDistP", "NS+Fit+BDDistP" or any variant with "," at the end ("NS," for instance) if selection within the offspring only ("," selection scheme of ES) 
     }
     
     

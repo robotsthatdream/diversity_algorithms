@@ -22,7 +22,7 @@ from os import path
 # See https://github.com/DEAP/deap/issues/57
 
 from diversity_algorithms.algorithms.cma_ns import set_creator_cmans
-set_creator_smans(creator)
+set_creator_cmans(creator)
 
 nbfitobj=2 #len(pop[0].fitness.values)
 
@@ -57,7 +57,7 @@ def generate_evolvability_pop_cmans(pop_dir, gen):
 
 
     print("Generating evolvability for a CMANS population ")
-    popfile=pop_dir+"/pop_gen%d.npz"%(gen)
+    popfile=pop_dir+"/population_gen%d.npz"%(gen)
 
         
     params=dict(np.load(pop_dir+"/params.npz", allow_pickle=True))
