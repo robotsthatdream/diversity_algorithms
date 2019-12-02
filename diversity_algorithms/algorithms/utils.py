@@ -224,7 +224,7 @@ def generate_evolvability_samples(run_name, population, evolvability_nb_samples,
 
     Generates a sample of individuals from the given population. It either relies on the toolbox (with the crossover and mutation probabilities) or on the strategy (if the individuals have one) to generate the points. 
     """
-    if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period==0):
+    if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen>0) and (gen % evolvability_period==0):
         print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
@@ -248,7 +248,7 @@ def generate_evolvability_samples(run_name, population, evolvability_nb_samples,
         print("")
 
 
-def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, pop1label="population", pop2label="offspring", archive=None, logbook=None):
+def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, pop1label="population", pop2label="offspring", archive=None, logbook=None, pop_to_dump=[True, True]):
     #print("Dumping data. Gen="+str(gen)+" dump_period_bd="+str(dump_period_bd)+" dump_period_pop="+str(dump_period_pop))
     if(dump_period_bd and (gen % dump_period_bd == 0)): # Dump behavior descriptors
         dump_bd=open(run_name+"/bd_%04d_%s.log"%(gen,pop1label),"w")
@@ -262,9 +262,9 @@ def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, p
             dump_bd.close()
     
     if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump populatio    if dump_period_pop:
-        if(pop1 is not None):
+        if(pop1 is not None and pop_to_dump[0]):
             dump_pop(pop1, gen, run_name, pop1label)
-        if(pop2 is not None):
+        if(pop2 is not None and pop_to_dump[1]):
             dump_pop(pop2, gen,run_name, pop2label)
         if (archive is not None):
             dump_archive(archive, gen,run_name)

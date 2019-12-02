@@ -43,10 +43,15 @@ class NovArchive:
         self.kdtree=KDTree(self.all_bd)
         #print("Archive updated, old size = %d, new size = %d"%(oldsize,len(self.all_bd)))
     def get_nov(self,bd, population=[]):
+        if(True in np.isnan(bd)):
+            return -1
+
         if (len(population)==0):
             print("WARNING: get_nov with an empty population")
         dpop=[]
         for ind in population:
+            if (True in np.isnan(ind.bd)):
+                continue
             assert len(bd)==len(ind.bd), "get_nov, bd of different sizes: len(bd)=%d, len(ind.bd)=%d"%(len(bd),len(ind.bd))
             dpop.append(np.linalg.norm(np.array(bd)-np.array(ind.bd)))
         darch,ind=self.kdtree.query(np.array(bd),self.k)
@@ -78,7 +83,10 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
        if (verbose):
            print("Update Novelty. Archive size=%d"%(archive.size())) 
        for ind in population:
-           ind.novelty=archive.get_nov(ind.bd, population)
+           if (True in np.isnan(ind.bd)):
+               ind.novelty=-1
+           else:
+               ind.novelty=archive.get_nov(ind.bd, population)
    else:
        if (verbose):
            print("Update Novelty. Initial step...") 
@@ -96,15 +104,22 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
 
    lbd=[]
    # Update of the archive
+   # we remove indivs with NAN values
+   offspring2=list(filter(lambda x: not (True in np.isnan(x.bd)), offspring))
+   if (len(offspring)!=len(offspring2)):
+       print("WARNING: in updateNovelty, some individuals have a behavior descriptor with NaN values ! Initial offspring size: %d, filtered offspring size: %d"%(len(offspring), len(offspring2)))
+   if (len(offspring2)<_lambda):
+       print("WARNING: too few individuals have a non NaN value. We limit the number of added individuals to %d (number of offspring with non NaN bd)..."%(len(offspring2)))
+       _lambda=len(offspring2)
    if(add_strategy=="random"):
-       l=list(range(len(offspring)))
+       l=list(range(len(offspring2)))
        random.shuffle(l)
        if (verbose):
            print("Random archive update. Adding offspring: "+str(l[:_lambda])) 
-       lbd=[offspring[l[i]].bd for i in range(_lambda)]
+       lbd=[offspring2[l[i]].bd for i in range(_lambda)]
    elif(add_strategy=="novel"):
-       soff=sorted(offspring,lambda x:x.novelty)
-       ilast=len(offspring)-_lambda
+       soff=sorted(offspring2,lambda x:x.novelty)
+       ilast=len(offspring2)-_lambda
        lbd=[soff[i].bd for i in range(ilast,len(soff))]
        if (verbose):
            print("Novel archive update. Adding offspring: ")

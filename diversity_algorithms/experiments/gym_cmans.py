@@ -57,7 +57,7 @@ def eval_with_functor(g):
 
 
 
-def launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1, variant="CMANS"):
+def launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1, variant="CMANS", ccov=0.2, cmamu=20):
 	"""Launch a novelty search run on the maze
 	
 	Launch a novelty search run on the maze:
@@ -102,7 +102,9 @@ def launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period=0, 
 		"MIN": -5, # Seems reasonable for NN weights
 		"MAX": 5, # Seems reasonable for NN weights
 		"MU": pop_size,
+		"CMAMU": cmamu,
 		"LAMBDA": nb_samples, # number of samples to generate per indiv of the population
+                "CCOV": ccov,
 		"K":15,
 		"SIGMA": 1,
 		"ADD_STRATEGY":"random",
@@ -163,15 +165,19 @@ evolvability_period=0
 dump_period_pop=10
 dump_period_bd=1
 variant="CMANS"
+ccov=0.2
+cmamu=pop_size
+
+help_str=" -e <env_name> [-p <population size> -n <nb_samples> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period> -a <variant> -c <ccov> -m <cmamu>]"
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:],"he:p:n:g:v:b:d:a:",["env_name=","pop_size=","nb_samples=","nb_gen=","evolvability_period=","dump_period_bd=","dump_period_pop=", "variant="])
+	opts, args = getopt.getopt(sys.argv[1:],"he:p:n:g:v:b:d:a:c:m:",["env_name=","pop_size=","nb_samples=","nb_gen=","evolvability_period=","dump_period_bd=","dump_period_pop=", "variant=", "ccov=", "cmamu="])
 except getopt.GetoptError:
-	print(sys.argv[0]+" -e <env_name> [-p <population size> -n <nb_samples> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period> -a <variant>]")
+	print(sys.argv[0]+help_str)
 	sys.exit(2)
 for opt, arg in opts:
 	if opt == '-h':
-		print(sys.argv[0]+" -e <env_name> [-p <population size> -n <nb_samples> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period> -a <variant>]")
+		print(sys.argv[0]+help_str)
 		sys.exit()
 	elif opt in ("-e", "--env_name"):
 		env_name = arg
@@ -189,10 +195,14 @@ for opt, arg in opts:
 		dump_period_pop = int(arg)
 	elif opt in ("-a", "--variant"):
 		variant = arg
+	elif opt in ("-c", "--ccov"):
+		ccov = float(arg)
+	elif opt in ("-m", "--cmamu"):
+		cmamu = int(arg)
 		
 if(env_name is None):
 	print("You must provide the environment name (as it ias been registered in gym)")
-	print(sys.argv[0]+" -e <env_name> [-p <population size> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period>]")
+	print(sys.argv[0]+help_str)
 	sys.exit()
 	
 	
@@ -208,7 +218,7 @@ if(__name__=='__main__'):
 	print("Saving logs in "+run_name)
 	dump_exp_details(sys.argv,run_name)
 
-	pop, logbook = launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period, dump_period_pop, dump_period_bd, variant)
+	pop, logbook = launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period, dump_period_pop, dump_period_bd, variant, ccov, cmamu)
 
 	
 	dump_end_of_exp(run_name)

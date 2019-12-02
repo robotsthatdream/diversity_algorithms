@@ -42,6 +42,10 @@ class Indiv_CMANS(object):
     def set_C(self,C):
         self.strategy.C=np.array(C)
 
+    def print_params(self):
+        if (hasattr(self, "strategy") and self.strategy is not None): 
+            return self.strategy.print_params()
+        
 class CMANS_Strategy_C_rank_one:
     def __init__(self, ind_init, centroid, sigma, w, lambda_, ccov=0.2):
         self.ind_init = ind_init
@@ -54,7 +58,9 @@ class CMANS_Strategy_C_rank_one:
         self.lambda_=lambda_
         self.mu=len(w)
 
-
+    def print_params(self):
+        return "Centroid: "+str(self.centroid)+" C: "+str(self.C)+" sigma: "+str(self.sigma)+" w: "+str(self.w)+" ccov: "+str(self.ccov)+" lambda: "+str(self.lambda_)+" mu: "+str(self.mu)
+        
     def generate_samples(self, lambda_):
         arz = [ self.centroid + self.sigma*np.dot(np.random.standard_normal(self.centroid.shape),self.C.T) for _ in range(lambda_)]
         npop= [ self.ind_init() for _ in range(lambda_)]
@@ -85,6 +91,8 @@ class CMANS_Strategy_C_rank_one:
         self.C = (1.-self.ccov)*self.C + self.ccov * self.muw * ywywT
         #print("Updated C: "+str(self.C))
         #print("After update of C: min=%f max=%f"%(self.C.min(), self.C.max()))
+
+        
         
 def generate_CMANS(icls, scls, size, xmin, xmax, sigma, w, lambda_=100, ccov=0.2):
     centroid = [random.uniform(xmin, xmax) for _ in range(size)]
@@ -125,7 +133,8 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
     print("CMA-NS Novelty search algorithm")
     print("     variant="+variant)
     print("     lambda=%d, mu=%d, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,ngen,k,lambdaNov))
-
+    print("     strategy: "+population[0].print_params())
+    
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals']
     if (stats is not None):
@@ -200,7 +209,7 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
             else:
                 print(".", end='', flush=True)
 
-        generate_dumps(run_name, dump_period_bd, dump_period_pop, population, all_samples, gen, pop1label="population", pop2label="all_samples", archive=archive, logbook=logbook)
+        generate_dumps(run_name, dump_period_bd, dump_period_pop, population, all_samples, gen, pop1label="population", pop2label="all_samples", archive=archive, logbook=logbook, pop_to_dump=[True, False])
         
         generate_evolvability_samples(run_name, population, evolvability_nb_samples, evolvability_period, gen, toolbox)
         
@@ -232,8 +241,10 @@ def CMA_NS(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"
             "MIN": -5, # Min of genotype values
             "MAX": 5, # Max of genotype values
             "MU": 20, # Number of individuals selected at each generation
+            "CMAMU": 20, # Number of samples selected to update the covariance
             "SIGMA": 1,
             "LAMBDA": 100, # Number of offspring generated at each generation
+            "CCOV": 0.2, # Coeff of the new covariance matrix in the update function
             "K":15, # Number of neighbors to consider in the archive for novelty computation
             "ADD_STRATEGY":"random", # Selection strategy to add individuals to the archive
             "LAMBDANOV":6, # How many individuals to add to the archive at each gen
@@ -256,7 +267,7 @@ def CMA_NS(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"
     # -------------
     toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
     
-    toolbox.register("individual", generate_CMANS, creator.Individual, CMANS_Strategy_C_rank_one, size=params["IND_SIZE"], xmin=params["MIN"], xmax=params["MAX"], sigma=params["SIGMA"], w=[1]*params["MU"], lambda_ = params["LAMBDA"])
+    toolbox.register("individual", generate_CMANS, creator.Individual, CMANS_Strategy_C_rank_one, size=params["IND_SIZE"], xmin=params["MIN"], xmax=params["MAX"], sigma=params["SIGMA"], w=[1]*params["CMAMU"], lambda_ = params["LAMBDA"], ccov=params["CCOV"])
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     #toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
 
