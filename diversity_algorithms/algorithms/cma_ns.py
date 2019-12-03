@@ -20,7 +20,7 @@ def set_creator_cmans(cr):
 from deap import tools, base, algorithms
 
 from diversity_algorithms.algorithms.utils import *
-from diversity_algorithms.algorithms.novelty_search import *
+from diversity_algorithms.algorithms.novelty_management import *
 from diversity_algorithms.analysis.population_analysis import *
 from diversity_algorithms.analysis.data_utils import *
 
