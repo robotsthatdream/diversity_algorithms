@@ -19,7 +19,7 @@ default_max_step = 2000 # same as C++ sferes experiments
 class EvaluationFunctor:
 	def __init__(self, env=None, env_name=None, controller=None, controller_type=None, controller_params=None, output='total_reward',max_step=default_max_step, get_behavior_descriptor='auto'):
 		global current_serial
-		print("Eval functor created")
+		#print("Eval functor created")
 		#Env
 		#Controller
 		self.out = output
