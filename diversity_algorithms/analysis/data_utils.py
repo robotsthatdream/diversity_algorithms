@@ -138,3 +138,36 @@ def get_exp_files(resdir, variant, cond_files):
                     eres.append(edir)
     return eres
                     
+def get_exp_files_params(resdir, variant, cond_files, params):
+    """Gets only the experiments that respect some conditions: existing files and params values.
+
+    Gets only the experiments that respect some conditions.
+    :param resdir: the dir to explore
+    :param variant: the name of the variant to take into account
+    :param cond_files: a list of files that must exist.
+    :param params: a dictionary of params values for a run to be taken into account
+    """
+    eres=[]
+    with os.scandir(resdir) as it:
+        for f in it:
+            if variant in f.name:
+                # this exp can be considered
+                to_keep=True
+                edir=resdir+"/"+f.name
+                for p in cond_files:
+                    if not os.path.isfile(edir+"/"+p):
+                        print(p+" not found in :\n\t"+edir)
+                        to_keep=False
+                        break
+                if to_keep:
+                    paramfile=resdir+"/"+"params.npz"
+                    paramrun=np.load(paramfile)
+                    for p in params.keys():
+                        if (p not in paramrun.keys()) or (paramrun[p] != params[p]):
+                            to_keep=False
+                            break
+                    if to_keep:
+                        print("Result to keep: "+edir)
+                        eres.append(edir)
+    return eres
+                    

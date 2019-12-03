@@ -57,7 +57,16 @@ def generate_evolvability_pop_cmans(pop_dir, gen):
 
 
     print("Generating evolvability for a CMANS population ")
-    popfile=pop_dir+"/population_gen%d.npz"%(gen)
+    popfile1=pop_dir+"/pop_gen%d.npz"%(gen)
+    popfile2=pop_dir+"/population_gen%d.npz"%(gen)
+
+    if (os.path.isfile(popfile1)):
+        popfile=popfile1
+    elif(os.path.isfile(popfile2)):
+        popfile=popfile2
+    else:
+        print("ERROR: neither "+popfile1+" nor "+popfile2+" do exist")
+        return []
 
         
     params=dict(np.load(pop_dir+"/params.npz", allow_pickle=True))
