@@ -46,7 +46,7 @@ def generate_exp_name(name=""):
             nb+=1
     return run_name
 
-def dump_exp_details(argv,run_name):
+def dump_exp_details(argv,run_name, params):
     print("Dumping exp details: "+" ".join(argv))
     gdir=os.path.dirname(argv[0])
     if (gdir==""):
@@ -60,11 +60,17 @@ def dump_exp_details(argv,run_name):
     f.write("## Features of the experiment ##\n")
     f.write("Git hash: "+r.stdout.decode("utf-8"))
     f.write("Command: "+" ".join(argv)+"\n")
-
+    f.write("Params: \n")
+    for k in params.keys():
+	    if (params[k].is_default()):
+		    defstr="(default)"
+	    else:
+		    defstr=""
+	    f.write("\t"+k+" "+str(params[k].get_value())+" "+defstr+"\n")
     d=datetime.datetime.today()
     sd=d.strftime("<%Y_%m_%d-%H:%M:%S>")
 
-    f.write("++ Started at: "+sd+"\n")
+    f.write("\n++ Started at: "+sd+"\n")
     f.close()
 
 def dump_end_of_exp(run_name):
@@ -171,6 +177,10 @@ def load_pop_toolbox(dumpfile, toolbox):
             ind.novelty=pop_dict["novelty_%d"%(i)]
         pop.append(ind)
     return pop
+		    
+def verbosity(params, value=["all"]):
+	return params["verbosity"] in value
+			    
 
 def dump_archive(archive, gen, run_name="runXXX"):
     out_dict = {"gen": gen, "size": archive.size()}
@@ -219,19 +229,20 @@ def dump_logbook(logbook,gen,run_name="runXXX"):
         pass
     np.savez(run_name+"/logbook_gen%d.npz" % gen, **out_dict) 
 
-def generate_evolvability_samples(run_name, population, evolvability_nb_samples, evolvability_period, gen, toolbox, cxpb=0, mutpb=0):
+def generate_evolvability_samples(params, population, gen, toolbox):
     """Generates a sample of individuals from the given population. 
 
     Generates a sample of individuals from the given population. It either relies on the toolbox (with the crossover and mutation probabilities) or on the strategy (if the individuals have one) to generate the points. 
     """
-    if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen>0) and (gen % evolvability_period==0):
-        print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
+
+    if (params["evolvability_nb_samples"]>0) and (params["evolvability_period"]>0) and (gen>0) and (gen % params["evolvability_period"]==0):
+        print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(params["evolvability_nb_samples"]))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
         for ind in population:
             print(".", end='', flush=True)
             if (hasattr(ind, 'strategy')):
-                ind.evolvability_samples=ind.strategy.generate_samples(evolvability_nb_samples)
+                ind.evolvability_samples=ind.strategy.generate_samples(params["evolvability_nb_samples"])
                 fitnesses = toolbox.map(toolbox.evaluate, ind.evolvability_samples)
                 for indes, fit in zip(ind.evolvability_samples, fitnesses):
                     indes.fitness.values = fit[0] 
@@ -239,7 +250,7 @@ def generate_evolvability_samples(run_name, population, evolvability_nb_samples,
                     indes.evolvability_samples=None # SD: required, otherwise, the memory usage explodes... I do not understand why yet.
                 
             else:
-                    ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
+                    ind.evolvability_samples=sample_from_pop([ind],toolbox,params["evolvability_nb_samples"],params["cxpb"],params["mutpb"])
             dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
             for inde in ind.evolvability_samples:
                 dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")

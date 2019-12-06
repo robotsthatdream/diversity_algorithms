@@ -3,6 +3,9 @@ import random
 from scipy.spatial import KDTree
 import numpy as np
 
+from diversity_algorithms.algorithms.utils import verbosity
+
+
 __all__ = ["NovArchive", "updateNovelty"]
 
 # ### Novelty-based Evolution Strategies
@@ -49,7 +52,7 @@ class NovArchive:
     def size(self):
         return len(self.all_bd)
     
-def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _lambda=6, verbose=False):
+def updateNovelty(population, offspring, archive, params):
    """Update the novelty criterion (including archive update) 
 
    Implementation of novelty search following (Gomes, J., Mariano, P., & Christensen, A. L. (2015, July). Devising effective novelty search algorithms: A comprehensive empirical study. In Proceedings of GECCO 2015 (pp. 943-950). ACM.).
@@ -62,10 +65,13 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
 
    The function returns the new archive
    """
-   
+   k=params["k"]
+   add_strategy=params["add_strategy"]
+   _lambda=params["lambda_nov"]
+
    # Novelty scores updates
    if (archive) and (archive.size()>=k):
-       if (verbose):
+       if (verbosity(params,["all", "novelty"])):
            print("Update Novelty. Archive size=%d"%(archive.size())) 
        for ind in population:
            if (True in np.isnan(ind.bd)):
@@ -73,12 +79,12 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
            else:
                ind.novelty=archive.get_nov(ind.bd, population)
    else:
-       if (verbose):
+       if (verbosity(params,["all", "novelty"])):
            print("Update Novelty. Initial step...") 
        for ind in population:
            ind.novelty=0.
 
-   if (verbose):
+   if (verbosity(params,["all", "novelty"])):
        print("Fitness (novelty): ",end="") 
        for ind in population:
            print("%.2f, "%(ind.novelty),end="")
@@ -99,14 +105,14 @@ def updateNovelty(population, offspring, archive, k=15, add_strategy="random", _
    if(add_strategy=="random"):
        l=list(range(len(offspring2)))
        random.shuffle(l)
-       if (verbose):
+       if (verbosity(params,["all", "novelty"])):
            print("Random archive update. Adding offspring: "+str(l[:_lambda])) 
        lbd=[offspring2[l[i]].bd for i in range(_lambda)]
    elif(add_strategy=="novel"):
        soff=sorted(offspring2,lambda x:x.novelty)
        ilast=len(offspring2)-_lambda
        lbd=[soff[i].bd for i in range(ilast,len(soff))]
-       if (verbose):
+       if (verbosity(params,["all", "novelty"])):
            print("Novel archive update. Adding offspring: ")
            for offs in soff[iLast:len(soff)]:
                print("    nov="+str(offs.novelty)+" fit="+str(offs.fitness.values)+" bd="+str(offs.bd))

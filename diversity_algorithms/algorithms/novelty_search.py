@@ -7,7 +7,7 @@ import datetime
 import os
 import array
 
-from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
+#from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
 
 creator = None
 def set_creator(cr):
@@ -22,10 +22,58 @@ from diversity_algorithms.analysis.data_utils import *
 
 from diversity_algorithms.algorithms.novelty_management import *
 
+__all__=["novelty_ea"]
+
+def build_toolbox_ns(evaluate,params,pool=None):
+         
+    toolbox = base.Toolbox()
+
+    if(params["geno_type"] == "realarray"):
+        print("** Using fixed structure networks (MLP) parameterized by a real array **")
+        # With fixed NN
+        # -------------
+        toolbox.register("attr_float", lambda : random.uniform(params["min"], params["max"]))
+        
+        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=params["ind_size"])
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        #toolbox.register("mate", tools.cxBlend, alpha=params["alpha"])
+    
+        # Polynomial mutation with eta=15, and p=0.1 as for Leni
+        toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["eta_m"], indpb=params["indpb"], low=params["min"], up=params["max"])
+    
+    elif(params["geno_type"] == "dnn"):
+        print("** Using dymamic structure networks (DNN) **")
+        # With DNN (dynamic structure networks)
+        #---------
+        toolbox.register("individual", initDNN, creator.Individual, in_size=params["geno_n_in"],out_size=params["geno_n_out"])
+
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        #toolbox.register("mate", mateDNNDummy, alpha=params["alpha"])
+    
+        # Polynomial mutation with eta=15, and p=0.1 as for Leni
+        toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["dnn_mut_pb_wb"], mutation_eta=params["dnn_mut_eta_wb"], mutation_rate_add_conn=params["dnn_mut_pb_add_conn"], mutation_rate_del_conn=params["dnn_mut_pb_del_conn"], mutation_rate_add_node=params["dnn_mut_pb_add_node"], mutation_rate_del_node=params["dnn_mut_pb_del_node"])
+    else:
+        raise RuntimeError("Unknown genotype type %s" % geno_type)
+
+    #Common elements - selection and evaluation
+    variant=params["variant"].replace(",","")
+    if (variant == "NS"): 
+        toolbox.register("select", tools.selBest, fit_attr='novelty')
+    elif (variant == "Fit"):
+        toolbox.register("select", tools.selBest, fit_attr='fitness')
+    else:
+        toolbox.register("select", tools.selNSGA2)
+        
+    toolbox.register("evaluate", evaluate)
+    
+    # Parallelism
+    if(pool):
+        toolbox.register("map", pool.map)
+    
+    return toolbox
 
 ## DEAP compatible algorithm
-def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy,lambdaNov,
-                          stats=None, stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX", variant="NS"):
+def novelty_ea(evaluate, params, pool=None):
     """Novelty Search algorithm
  
     Novelty Search algorithm. Parameters:
@@ -48,23 +96,25 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
     :param evolvability_nb_samples: the number of samples to generate from each individual in the population to estimate their evolvability (WARNING: it will significantly slow down a run and it is used only for statistical reasons
     """
 
+    variant=params["variant"]
     if ("+" in variant):
         emo=True
     else:
         emo=False
-        
-    if(halloffame!=None):
-        print("WARNING: the hall of fame argument is ignored in the Novelty Search Algorithm")
-    
-    print("     variant="+variant)
-    print("     lambda=%d, mu=%d, cxpb=%.2f, mutpb=%.2f, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,cxpb,mutpb,ngen,k,lambdaNov))
+
+    lambda_ = int(params["lambda"]*params["pop_size"])
+
+    toolbox=build_toolbox_ns(evaluate,params,pool)
+
+    population = toolbox.population(n=params["pop_size"])
 
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals']
-    if (stats is not None):
-        logbook.header += stats.fields
-    if (stats_offspring is not None):
-        logbook.header += stats_offspring.fields
+
+    if (params["stats"] is not None):
+        logbook.header += params["stats"].fields
+    if (params["stats_offspring"] is not None):
+        logbook.header += params["stats_offspring"].fields
 
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
@@ -79,9 +129,9 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
     for ind in population:
         ind.am_parent=0
         
-    archive=updateNovelty(population,population,None,k,add_strategy,lambdaNov)
+    archive=updateNovelty(population,population,None,params)
 
-    varian=variant.replace(",","")
+    varian=params["variant"].replace(",","")
 
     
     for ind in population:
@@ -102,23 +152,23 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
     gen=0    
 
     # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
-    generate_evolvability_samples(run_name, population, evolvability_nb_samples, evolvability_period, gen, toolbox, cxpb, mutpb)
+    generate_evolvability_samples(params, population, gen, toolbox)
 
-    record = stats.compile(population) if stats is not None else {}
-    record_offspring = stats_offspring.compile(population) if stats_offspring is not None else {}
+    record = params["stats"].compile(population) if params["stats"] is not None else {}
+    record_offspring = params["stats_offspring"].compile(population) if params["stats_offspring"] is not None else {}
     logbook.record(gen=0, nevals=len(invalid_ind), **record, **record_offspring)
-    if verbose:
+    if (verbosity(params)):
         print(logbook.stream)
     
-    generate_dumps(run_name, dump_period_bd, dump_period_pop, population, None, gen, pop1label="population", archive=None, logbook=None)
+    #generate_dumps(params, population, None, gen, pop1label="population", archive=None, logbook=None)
 
     for ind in population:
         ind.evolvability_samples=None # To avoid memory to inflate too much..
         
     # Begin the generational process
-    for gen in range(1, ngen + 1):
+    for gen in range(1, params["nb_gen"] + 1):
         # Vary the population
-        offspring = algorithms.varOr(population, toolbox, lambda_, cxpb, mutpb)
+        offspring = algorithms.varOr(population, toolbox, lambda_, params["cxpb"], params["mutpb"])
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -137,7 +187,7 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
         pq=population+offspring
 
         
-        archive=updateNovelty(pq,offspring,archive,k,add_strategy,lambdaNov)
+        archive=updateNovelty(pq,offspring,archive,params)
 
         for ind in pq:
             if (emo):
@@ -165,7 +215,7 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
         if ((emo) and (offspring[0].fitness.values == offspring[0].fit)):
             print ("WARNING: EMO and the fitness is just the fitness !")
 
-        if (verbose):
+        if (verbosity(params)):
             print("Gen %d"%(gen))
         else:
             if(gen%100==0):
@@ -178,19 +228,19 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
         
         # Select the next generation population
         if ("," in variant):
-            population[:] = toolbox.select(offspring, mu)        
+            population[:] = toolbox.select(offspring, params["pop_size"])        
         else:
-            population[:] = toolbox.select(pq, mu)        
+            population[:] = toolbox.select(pq, params["pop_size"])        
 
-        generate_dumps(run_name, dump_period_bd, dump_period_pop, population, offspring, gen, pop1label="population", pop2label="offspring", archive=archive, logbook=logbook)
+        #generate_dumps(run_name, dump_period_bd, dump_period_pop, population, offspring, gen, pop1label="population", pop2label="offspring", archive=archive, logbook=logbook)
         
-        generate_evolvability_samples(run_name, population, evolvability_nb_samples, evolvability_period, gen, toolbox, cxpb, mutpb)
+        generate_evolvability_samples(params, population, gen, toolbox)
         
         # Update the statistics with the new population
-        record = stats.compile(population) if stats is not None else {}
-        record_offspring = stats_offspring.compile(offspring) if stats_offspring is not None else {}
+        record = params["stats"].compile(population) if params["stats"] is not None else {}
+        record_offspring = params["stats_offspring"].compile(offspring) if params["stats_offspring"] is not None else {}
         logbook.record(gen=gen, nevals=len(invalid_ind), **record, **record_offspring)
-        if verbose:
+        if (verbosity(params)):
             print(logbook.stream)
 
         for ind in population:
@@ -202,87 +252,6 @@ def noveltyEa(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,k,add_strategy
 
 
 
-def NovES(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
-    """Novelty-based Mu plus lambda ES."""
-
-    params={"IND_SIZE":1, 
-            "CXPB":0, # crossover probility
-            "MUTPB":0.5, # probability to mutate an individual
-            "NGEN":1000, # number of generations
-            "STATS":None, # Statistics
-            "STATS_OFFSPRING":None, # Statistics on offspring
-            "MIN": 0, # Min of genotype values
-            "MAX": 1, # Max of genotype values
-            "MU": 20, # Number of individuals selected at each generation
-            "LAMBDA": 100, # Number of offspring generated at each generation
-            "ALPHA": 0.1, # Alpha parameter of Blend crossover
-            "ETA_M": 15.0, # Eta parameter for polynomial mutation
-            "INDPB": 0.1, # probability to mutate a specific genotype parameter given that the individual is mutated. (The unconditional probability of a parameter being mutated is INDPB*MUTPB
-            "K":15, # Number of neighbors to consider in the archive for novelty computation
-            "ADD_STRATEGY":"random", # Selection strategy to add individuals to the archive
-            "LAMBDANOV":6, # How many individuals to add to the archive at each gen
-            "EVOLVABILITY_NB_SAMPLES":0, # How many children to generate to estimate evolvability
-            "EVOLVABILITY_PERIOD": 100, # Period to estimate evolvability
-            "DUMP_PERIOD_POP": 10, # Period to dump population
-            "DUMP_PERIOD_BD": 1, # Period to dump behavior descriptors
-            "VARIANT": "NS" # "NS", "Fit", "NS+Fit", "NS+BDDistP", "NS+Fit+BDDistP" or any variant with "," at the end ("NS," for instance) if selection within the offspring only ("," selection scheme of ES) 
-    }
-    
-    
-    for key in myparams.keys():
-        params[key]=myparams[key]
-
-         
-    toolbox = base.Toolbox()
-
-    if(geno_type == "realarray"):
-        print("** Unsing fixed structure networks (MLP) parameterized by a real array **")
-        # With fixed NN
-        # -------------
-        toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
-        
-        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=params["IND_SIZE"])
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-        toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
-    
-        # Polynomial mutation with eta=15, and p=0.1 as for Leni
-        toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["ETA_M"], indpb=params["INDPB"], low=params["MIN"], up=params["MAX"])
-    
-    elif(geno_type == "dnn"):
-        print("** Unsing dymamic structure networks (DNN) **")
-        # With DNN (dynamic structure networks)
-        #---------
-        toolbox.register("individual", initDNN, creator.Individual, in_size=params["GENO_N_IN"],out_size=params["GENO_N_OUT"])
-
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-        toolbox.register("mate", mateDNNDummy, alpha=params["ALPHA"])
-    
-        # Polynomial mutation with eta=15, and p=0.1 as for Leni
-        toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["DNN_MUT_PB_WB"], mutation_eta=params["DNN_MUT_ETA_WB"], mutation_rate_add_conn=params["DNN_MUT_PB_ADD_CONN"], mutation_rate_del_conn=params["DNN_MUT_PB_DEL_CONN"], mutation_rate_add_node=params["DNN_MUT_PB_ADD_NODE"], mutation_rate_del_node=params["DNN_MUT_PB_DEL_NODE"])
-    else:
-        raise RuntimeError("Unknown genotype type %s" % geno_type)
-
-    #Common elements - selection and evaluation
-    variant=params["VARIANT"].replace(",","")
-    if (variant == "NS"): 
-        toolbox.register("select", tools.selBest, fit_attr='novelty')
-    elif (variant == "Fit"):
-        toolbox.register("select", tools.selBest, fit_attr='fitness')
-    else:
-        toolbox.register("select", tools.selNSGA2)
-        
-    toolbox.register("evaluate", evaluate)
-    
-    # Parallelism
-    if(pool):
-        toolbox.register("map", pool.map)
-    
-
-    pop = toolbox.population(n=params["MU"])
-    
-    rpop, archive, logbook = noveltyEa(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], stats_offspring=params["STATS_OFFSPRING"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name, variant=params["VARIANT"])
-        
-    return rpop, archive, logbook
   
 if (__name__=='__main__'):
     print("Test of the Novelty-based ES")

@@ -1,6 +1,6 @@
  # coding: utf-8
 
-from diversity_algorithms.algorithms.novelty_search import NovArchive, NovES
+from diversity_algorithms.algorithms.novelty_search import novelty_ea
 # No reason to expose other functions - they can be accessed through the submodule if needed
 
 from diversity_algorithms.algorithms.behavior_descriptors import maze_behavior_descriptor, bipedal_behavior_descriptor
