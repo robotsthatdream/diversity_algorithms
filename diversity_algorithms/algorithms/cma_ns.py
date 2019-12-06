@@ -8,7 +8,7 @@ import numpy as np
 import datetime
 import os
 import array
-
+import sys
 
 #from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
 
@@ -100,10 +100,34 @@ def generate_CMANS(icls, scls, size, xmin, xmax, sigma, w, lambda_=100, ccov=0.2
     ind.strategy = scls(icls, centroid, sigma, w, lambda_, ccov)
     return ind
 
+def build_toolbox_cmans(evaluate,params,pool=None):
+         
+    toolbox = base.Toolbox()
+    
+    if(params["geno_type"]!="realarray"):
+        print("ERROR: CMANS supports only realarray genotypes.")
+        sys.exit(1)
+
+    print("** Using fixed structure networks (MLP) parameterized by a real array **")
+    # With fixed NN
+    # -------------
+    toolbox.register("attr_float", lambda : random.uniform(params["min"], params["max"]))
+    
+    toolbox.register("individual", generate_CMANS, creator.Individual, CMANS_Strategy_C_rank_one, size=params["ind_size"], xmin=params["min"], xmax=params["max"], sigma=params["sigma"], w=[1]*params["cmamu"], lambda_ = params["pop_size"], ccov=params["ccov"])
+    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    toolbox.register("select", tools.selNSGA2)
+        
+    toolbox.register("evaluate", evaluate)
+    
+    # Parallelism
+    if(pool):
+        toolbox.register("map", pool.map)
+    
+    return toolbox
+
 
 ## DEAP compatible algorithm
-def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
-                          stats=None, stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX", variant="CMANS"):
+def cmans(evaluate, params, pool):
     """CMA-NS algorithm
  
     CMA-NS algorithm. Parameters:
@@ -125,26 +149,23 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
     :param evolvability_period: period of the evolvability computation
     :param evolvability_nb_samples: the number of samples to generate from each individual in the population to estimate their evolvability (WARNING: it will significantly slow down a run and it is used only for statistical reasons
     """
-
-        
-    if(halloffame!=None):
-        print("WARNING: the hall of fame argument is ignored in the Novelty Search Algorithm")
     
     print("CMA-NS Novelty search algorithm")
-    print("     variant="+variant)
-    print("     lambda=%d, mu=%d, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,ngen,k,lambdaNov))
-    print("     strategy: "+population[0].print_params())
+
+    toolbox=build_toolbox_cmans(evaluate,params,pool)
+
+    population = toolbox.population(n=params["pop_size"])
     
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals']
-    if (stats is not None):
-        logbook.header += stats.fields
-    if (stats_offspring is not None):
-        logbook.header += stats_offspring.fields
+    if (params["stats"] is not None):
+        logbook.header += params["stats"].fields
+    if (params["stats_offspring"] is not None):
+        logbook.header += params["stats_offspring"].fields
     #logbook=None
 
     # The size of the population is initially mu. We generate mu other random individuals
-    population+=toolbox.population(n=mu)
+    population+=toolbox.population(n=params["pop_size"])
     archive=None
 
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
@@ -157,7 +178,7 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
 
         
     # Begin the generational process
-    for gen in range(ngen + 1):
+    for gen in range(params["nb_gen"] + 1):
 
         # The population contains a set of seeds
 
@@ -175,7 +196,7 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
             ind.fit = fit[0]
             ind.bd=listify(fit[1])
             
-        archive=updateNovelty(all_samples,all_samples,archive,k,add_strategy,lambdaNov)
+        archive=updateNovelty(all_samples,all_samples,archive,params)
 
         # Compute the fitness values for each seed: uniformity and cumulated novelty
         for s in range(len(population)):
@@ -187,11 +208,11 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
             population[s].fitness.values=(cumul_distance(samples_per_seed[s]), cumul)
             population[s].novelty=-1 # to simplify stats
 
-            population[s].strategy.update(samples_per_seed[s], variant)
+            population[s].strategy.update(samples_per_seed[s], params["variant"])
             #print("Cumul distance: %f, cumul novelty: %f"%(population[s].fitness.values[0], population[s].fitness.values[1]))
 
         # Select the seeds to survive with NSGA-2
-        population[:] = toolbox.select(population, mu)        
+        population[:] = toolbox.select(population, params["pop_size"])        
 
         # Add new seeds: the most novel (and distant ) ones
         all_samples.sort(key=lambda x:x.novelty)
@@ -199,7 +220,7 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
         #print("Novelty: min=%f, max=%f"%(all_samples[0].novelty, all_samples[-1].novelty))
 
 
-        if (verbose):
+        if (verbosity(params)):
             print("Gen %d"%(gen))
         else:
             if(gen%100==0):
@@ -208,16 +229,16 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
                 print("+", end='', flush=True)
             else:
                 print(".", end='', flush=True)
-
-        generate_dumps(run_name, dump_period_bd, dump_period_pop, population, all_samples, gen, pop1label="population", pop2label="all_samples", archive=archive, logbook=logbook, pop_to_dump=[True, False])
+                
+        #generate_dumps(run_name, dump_period_bd, dump_period_pop, population, all_samples, gen, pop1label="population", pop2label="all_samples", archive=archive, logbook=logbook, pop_to_dump=[True, False])
         
-        generate_evolvability_samples(run_name, population, evolvability_nb_samples, evolvability_period, gen, toolbox)
+        generate_evolvability_samples(params, population, gen, toolbox)
         
         # Update the statistics with the new population
-        record = stats.compile(population) if stats is not None else {}
+        record = params["stats"].compile(population) if params["stats"] is not None else {}
 #        record_offspring = stats_offspring.compile(all_samples) if stats_offspring is not None else {}
         logbook.record(gen=gen, nevals=len(invalid_ind), **record) #, **record_offspring)
-        if verbose:
+        if (verbosity(params)):
             print(logbook.stream)
 
         for ind in population:
@@ -228,73 +249,6 @@ def cmans(population, toolbox, mu, lambda_, ngen,k,add_strategy,lambdaNov,
             
     return population, archive, logbook
 
-
-
-
-def CMA_NS(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
-    """CMA_NS Diversity algorithm."""
-
-    params={"IND_SIZE":1, 
-            "NGEN":1000, # number of generations
-            "STATS":None, # Statistics
-            "STATS_OFFSPRING":None, # Statistics on offspring
-            "MIN": -5, # Min of genotype values
-            "MAX": 5, # Max of genotype values
-            "MU": 20, # Number of individuals selected at each generation
-            "CMAMU": 20, # Number of samples selected to update the covariance
-            "SIGMA": 1,
-            "LAMBDA": 100, # Number of offspring generated at each generation
-            "CCOV": 0.2, # Coeff of the new covariance matrix in the update function
-            "K":15, # Number of neighbors to consider in the archive for novelty computation
-            "ADD_STRATEGY":"random", # Selection strategy to add individuals to the archive
-            "LAMBDANOV":6, # How many individuals to add to the archive at each gen
-            "EVOLVABILITY_NB_SAMPLES":0, # How many children to generate to estimate evolvability
-            "EVOLVABILITY_PERIOD": 100, # Period to estimate evolvability
-            "DUMP_PERIOD_POP": 10, # Period to dump population
-            "DUMP_PERIOD_BD": 1, # Period to dump behavior descriptors
-            "VARIANT": "CMANS" # "NS", "Fit", "NS+Fit", "NS+BDDistP", "NS+Fit+BDDistP" or any variant with "," at the end ("NS," for instance) if selection within the offspring only ("," selection scheme of ES) 
-    }
-    
-    
-    for key in myparams.keys():
-        params[key]=myparams[key]
-
-         
-    toolbox = base.Toolbox()
-
-    print("** Unsing fixed structure networks (MLP) parameterized by a real array **")
-    # With fixed NN
-    # -------------
-    toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
-    
-    toolbox.register("individual", generate_CMANS, creator.Individual, CMANS_Strategy_C_rank_one, size=params["IND_SIZE"], xmin=params["MIN"], xmax=params["MAX"], sigma=params["SIGMA"], w=[1]*params["CMAMU"], lambda_ = params["LAMBDA"], ccov=params["CCOV"])
-    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    #toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
-
-    #def __init__(self, centroid, sigma, w, lambda_, ccov=0.2):
-
-    #strategy=CMANS_Strategy([0]*params["IND_SIZE"], 5, [1]*params["MU"], params["LAMBDA"])
-    
-    # Polynomial mutation with eta=15, and p=0.1 as for Leni
-    #toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["ETA_M"], indpb=params["INDPB"], low=params["MIN"], up=params["MAX"])
-    
-
-    #Common elements - selection and evaluation
-    toolbox.register("select", tools.selNSGA2)
-        
-    toolbox.register("evaluate", evaluate)
-    
-    # Parallelism
-    if(pool):
-        toolbox.register("map", pool.map)
-    
-
-    pop = toolbox.population(n=params["MU"])
-    
-    rpop, archive, logbook = cmans(pop, toolbox, mu=params["MU"], lambda_=params["LAMBDA"], ngen=params["NGEN"], k=params["K"], add_strategy=params["ADD_STRATEGY"], lambdaNov=params["LAMBDANOV"],stats=params["STATS"], stats_offspring=params["STATS_OFFSPRING"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name, variant=params["VARIANT"])
-        
-    return rpop, archive, logbook
-  
 if (__name__=='__main__'):
     pass
 

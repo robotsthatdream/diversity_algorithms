@@ -95,6 +95,7 @@ def novelty_ea(evaluate, params, pool=None):
     :param evolvability_period: period of the evolvability computation
     :param evolvability_nb_samples: the number of samples to generate from each individual in the population to estimate their evolvability (WARNING: it will significantly slow down a run and it is used only for statistical reasons
     """
+    print("Novelty search algorithm")
 
     variant=params["variant"]
     if ("+" in variant):

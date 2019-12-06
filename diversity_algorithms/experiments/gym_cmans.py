@@ -27,9 +27,10 @@ import math
 from diversity_algorithms.algorithms.cma_ns import set_creator_cmans
 set_creator_cmans(creator)
 
-#from diversity_algorithms.algorithms.novelty_search import NovES
-from diversity_algorithms.algorithms.cma_ns import CMA_NS, Indiv_CMANS
+from diversity_algorithms.algorithms.cma_ns import cmans, Indiv_CMANS
 from diversity_algorithms.algorithms.utils import *
+
+from diversity_algorithms.experiments.exp_utils import *
  
 creator.create("MyFitness", base.Fitness, weights=(1.0,1.0))
 creator.create("Individual", Indiv_CMANS, typecode="d", fitness=creator.MyFitness, strategy=None)
@@ -44,7 +45,6 @@ if with_scoop:
 	from scoop import futures
 
 
-env_name=None
 # Each worker gets a functor
 nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
 #env, controller = generate_gym_env_and_controller(params=nnparams)
@@ -55,174 +55,46 @@ eval_gym = EvaluationFunctor(controller_type=SimpleNeuralController,controller_p
 def eval_with_functor(g):
 	return eval_gym(g)
 
-
-
-def launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period=0, dump_period_pop=10, dump_period_bd=1, variant="CMANS", ccov=0.2, cmamu=20):
-	"""Launch a novelty search run on the maze
-	
-	Launch a novelty search run on the maze:
-	:param pop_size: population size
-	:param nb_samples: number of samples used to evaluate a seed
-	:param nb_gen: number of generations to compute
-	:param evolvability_nb_samples: number of samples to estimate the evolvability of each individual in the population
-	:param evolvability_period: period of the evolvability estimation
-	:param dump_period_pop: period of populatin dump
-	:param dump_period_bd: period of behavior descriptors dump	
-
-	WARNING: the evolvability requires to generate and evaluate pop_size*evolvability_nb_samples just for statistics purposes, it will significantly slow down the process.
-	"""
-#	if (env_name not in grid_features.keys()):
-#                print("You need to define the features of the grid to be used to track behavior descriptor coverage in algorithms/__init__.py")
-#                return None, None
-
-	if (env_name in grid_features.keys()):
-	        min_x=grid_features[env_name]["min_x"]
-	        max_x=grid_features[env_name]["max_x"]
-	        nb_bin=grid_features[env_name]["nb_bin"]
-
-	        grid=build_grid(min_x, max_x, nb_bin)
-	        grid_offspring=build_grid(min_x, max_x, nb_bin)
-	        stats=None
-	        stats_offspring=None
-	        nbc=nb_bin**2
-	        nbs=nbc*2 # min 2 samples per bin
-	        evolvability_nb_samples=nbs
-	else:
-                grid=None
-                grid_offspring=None
-                min_x=None
-                max_x=None
-                nb_bin=None
-                evolvability_nb_samples=0
-                nbs=0
-                
-	params={"VARIANT": variant,
-                "IND_SIZE":eval_gym.controller.n_weights, 
-		"NGEN":nb_gen, # Number of generations
-		"MIN": -5, # Seems reasonable for NN weights
-		"MAX": 5, # Seems reasonable for NN weights
-		"MU": pop_size,
-		"CMAMU": cmamu,
-		"LAMBDA": nb_samples, # number of samples to generate per indiv of the population
-                "CCOV": ccov,
-		"K":15,
-		"SIGMA": 1,
-		"ADD_STRATEGY":"random",
-		"LAMBDANOV":6,
-		"EVOLVABILITY_NB_SAMPLES": evolvability_nb_samples,
-		"EVOLVABILITY_PERIOD":evolvability_period,
-		"DUMP_PERIOD_POP": dump_period_pop,
-		"DUMP_PERIOD_BD": dump_period_bd,
-		"MIN_X": min_x, # not used by NS. It is just to keep track of it in the saved param file
-		"MAX_X": max_x, # not used by NS. It is just to keep track of it in the saved param file
-		"NB_BIN":nb_bin # not used by NS. It is just to keep track of it in the saved param file
+# declaration of params: RunParam(short_name (single letter for call from command line), default_value, doc)
+params={
+	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
+	"pop_size": RunParam("p", 10, "population size (mu)"),
+	"lambda": RunParam("l", 2., "Number of offspring generated (coeff on pop_size)"),
+	"env_name": RunParam("e", "FastsimSimpleNavigation-v0", "gym environment name"),
+	"nb_gen":   RunParam("g", 100, "number of generations"),
+	"evolvability_period": RunParam("V", 100, "period of evolvability estimation"),
+	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
+	"dump_period_pop": RunParam("d", 1, "period of population dump"),
+	"variant": RunParam("a", "CMANS", "variant of the CMA Novelty Search algorithm"),
+	"cxpb": RunParam("", 0, "cross-over rate"), # No crossover
+	"mutpb": RunParam("",1., "mutation rate"),  # All offspring are mutated...
+	"indpb": RunParam("",0.1, "indiv probability"), # ...but only 10% of parameters are mutated
+	"eta_m": RunParam("", 15.0, "Eta parameter for polynomial mutation"),
+	"min": RunParam("", -5., "Min value of the genotype"), # WARNING, some variants do not use it at all. -5 seems reasonable for NN weights
+	"max": RunParam("", 5., "Min value of the genotype"), # WARNING, some variants do not use it at all. 5 seems reasonable for NN weights
+	"k": RunParam("", 15, "Number of neighbors to take into account for novelty computation"),
+	"add_strategy": RunParam("s", "random", "strategy for archive inclusion (random or novel)"),
+	"lambda_nov": RunParam("", 6, "number of indiv added to the archive at each gen"),
+	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
+	"ccov": RunParam("c", 0.2, "coeff of the sample estimated C in the covariance matrix update"),
+	"cmamu": RunParam("m", 10, "number of samples to generate to update C"),
+	"sigma": RunParam("S", 1, "sigma coefficient for covariance matrix update")
 	}
 
-
-	# We use a different window size to compute statistics in order to have the same number of points for population and offspring statistics
-	window_population=nbs/params["MU"]
-	window_offspring=nbs/params["LAMBDA"]
+analyze_params(params, sys.argv)
 	
-	if (evolvability_period>0) and (evolvability_nb_samples>0):
-		stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_population, fitness_values=[1,1])
-		stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_",indiv=True,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_offspring, fitness_values=[1,1])
-	else:
-		stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_population, fitness_values=[1,1])
-		stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_", indiv=False,min_x=min_x,max_x=max_x,nb_bin=nb_bin, gen_window_global=window_offspring, fitness_values=[1,1])
-
-	params["STATS"] = stats # Statistics
-	params["STATS_OFFSPRING"] = stats_offspring # Statistics on offspring
-	params["WINDOW_POPULATION"]=window_population
-	params["WINDOW_OFFSPRING"]=window_offspring
-	
-	
-	print("Launching CMA-NS Novelty Search with pop_size=%d, nb_gen=%d and evolvability_nb_samples=%d"%(pop_size, nb_gen, evolvability_nb_samples))
-	if (grid is None):
-                print("WARNING: grid features have not been defined for env "+env_name+". This will have no impact on the run, except that the coverage statistic has been turned off")
-	if (evolvability_period>0) and (evolvability_nb_samples>0):
-		print("WARNING, evolvability_nb_samples>0. The run will last much longer...")
-
-	if with_scoop:
-		pool=futures
-	else:
-		pool=None
-		
-	dump_params(params,run_name)
-	pop, archive, logbook = CMA_NS(eval_with_functor, params, pool, run_name, geno_type="realarray")
-	dump_pop(pop,nb_gen,run_name)
-	dump_logbook(logbook,nb_gen,run_name)
-	dump_archive(archive,nb_gen,run_name)
-	
-	return pop, logbook
-
-
-
-
-pop_size=10
-nb_samples=10
-nb_gen=100
-evolvability_period=0
-dump_period_pop=10
-dump_period_bd=1
-variant="CMANS"
-ccov=0.2
-cmamu=pop_size
-
-help_str=" -e <env_name> [-p <population size> -n <nb_samples> -g <number of generations> -v <eVolvability computation period> -b <BD dump period> -d <generation dump period> -a <variant> -c <ccov> -m <cmamu>]"
-
-try:
-	opts, args = getopt.getopt(sys.argv[1:],"he:p:n:g:v:b:d:a:c:m:",["env_name=","pop_size=","nb_samples=","nb_gen=","evolvability_period=","dump_period_bd=","dump_period_pop=", "variant=", "ccov=", "cmamu="])
-except getopt.GetoptError:
-	print(sys.argv[0]+help_str)
-	sys.exit(2)
-for opt, arg in opts:
-	if opt == '-h':
-		print(sys.argv[0]+help_str)
-		sys.exit()
-	elif opt in ("-e", "--env_name"):
-		env_name = arg
-	elif opt in ("-p", "--pop_size"):
-		pop_size = int(arg)
-	elif opt in ("-n", "--nb_samples"):
-		nb_samples = int(arg)
-	elif opt in ("-g", "--nb_gen"):
-		nb_gen = int(arg)
-	elif opt in ("-v", "--evolvability_period"):
-		evolvability_period = int(arg)
-	elif opt in ("-b", "--dump_period_bd"):
-		dump_period_bd = int(arg)
-	elif opt in ("-d", "--dump_period_pop"):
-		dump_period_pop = int(arg)
-	elif opt in ("-a", "--variant"):
-		variant = arg
-	elif opt in ("-c", "--ccov"):
-		ccov = float(arg)
-	elif opt in ("-m", "--cmamu"):
-		cmamu = int(arg)
-		
-if(env_name is None):
-	print("You must provide the environment name (as it ias been registered in gym)")
-	print(sys.argv[0]+help_str)
-	sys.exit()
-	
-	
-eval_gym.set_env(None,env_name, with_bd=True)
+eval_gym.set_env(None,params["env_name"].get_value(), with_bd=True)
 
 
 # THIS IS IMPORTANT or the code will be executed in all workers
 if(__name__=='__main__'):
 	# Get env and controller
 
-			
-	run_name=generate_exp_name(env_name+"_"+variant)
-	print("Saving logs in "+run_name)
-	dump_exp_details(sys.argv,run_name)
-
-	pop, logbook = launch_cmans(env_name, pop_size, nb_samples, nb_gen, evolvability_period, dump_period_pop, dump_period_bd, variant, ccov, cmamu)
-
+	sparams, pool=preparing_run(eval_gym, params, with_scoop)
 	
-	dump_end_of_exp(run_name)
-	
-	print("The population, log, archives, etc have been dumped in: "+run_name)
+	pop, archive, logbook = cmans(eval_with_functor, sparams, pool)
+
+	terminating_run(sparams, pop, archive, logbook)
+
 	
 
