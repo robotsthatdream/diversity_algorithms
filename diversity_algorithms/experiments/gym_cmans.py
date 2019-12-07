@@ -20,6 +20,12 @@ import dill
 import pickle
 import math
 
+from diversity_algorithms.algorithms.cma_ns import cmans, Indiv_CMANS
+from diversity_algorithms.algorithms.utils import *
+
+from diversity_algorithms.experiments.exp_utils import *
+
+
 # =====
 # Yes, this is ugly. This is DEAP's fault.
 # See https://github.com/DEAP/deap/issues/57
@@ -27,17 +33,12 @@ import math
 from diversity_algorithms.algorithms.cma_ns import set_creator_cmans
 set_creator_cmans(creator)
 
-from diversity_algorithms.algorithms.cma_ns import cmans, Indiv_CMANS
-from diversity_algorithms.algorithms.utils import *
-
-from diversity_algorithms.experiments.exp_utils import *
  
 creator.create("MyFitness", base.Fitness, weights=(1.0,1.0))
 creator.create("Individual", Indiv_CMANS, typecode="d", fitness=creator.MyFitness, strategy=None)
 #creator.create("Strategy", list, typecode="d")
 
 # =====
-
 
 with_scoop=True
 
@@ -65,7 +66,7 @@ params={
 	"evolvability_period": RunParam("V", 100, "period of evolvability estimation"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
 	"dump_period_pop": RunParam("d", 1, "period of population dump"),
-	"variant": RunParam("a", "CMANS", "variant of the CMA Novelty Search algorithm"),
+	"variant": RunParam("a", "CMANS", "variant of the CMANS Novelty Search algorithm"),
 	"cxpb": RunParam("", 0, "cross-over rate"), # No crossover
 	"mutpb": RunParam("",1., "mutation rate"),  # All offspring are mutated...
 	"indpb": RunParam("",0.1, "indiv probability"), # ...but only 10% of parameters are mutated

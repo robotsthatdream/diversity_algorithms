@@ -126,7 +126,6 @@ def build_toolbox_cmans(evaluate,params,pool=None):
     return toolbox
 
 
-## DEAP compatible algorithm
 def cmans(evaluate, params, pool):
     """CMA-NS algorithm
  
