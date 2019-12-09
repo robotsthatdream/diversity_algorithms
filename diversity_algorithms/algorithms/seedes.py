@@ -39,7 +39,10 @@ def build_toolbox_seedes(evaluate, params, pool=None):
         toolbox.register("mate", tools.cxBlend, alpha=params["alpha"])
     
         # Polynomial mutation with eta=15, and p=0.1 as for Leni
-        toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["eta_m"], indpb=params["indpb"], low=params["min"], up=params["max"])
+        if(params["variant"] == "SES-Gaussian"):
+            toolbox.register("mutate", tools.mutGaussian, mu=0., sigma=params["sigma_gaussian"], indpb=params["indpb"])
+        else:
+            toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["eta_m"], indpb=params["indpb"], low=params["min"], up=params["max"])
     
     elif(params["geno_type"] == "dnn"):
         print("** Unsing dymamic structure networks (DNN) **")
