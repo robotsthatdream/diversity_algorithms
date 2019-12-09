@@ -68,9 +68,6 @@ params={
 	"dump_period_population": RunParam("d", 1, "period of population dump"),
 	"dump_period_archive": RunParam("D", 1, "period of archive dump"),
 	"variant": RunParam("a", "CMANS", "variant of the CMANS Novelty Search algorithm"),
-	"cxpb": RunParam("", 0, "cross-over rate"), # No crossover
-	"mutpb": RunParam("",1., "mutation rate"),  # All offspring are mutated...
-	"indpb": RunParam("",0.1, "indiv probability"), # ...but only 10% of parameters are mutated
 	"eta_m": RunParam("", 15.0, "Eta parameter for polynomial mutation"),
 	"min": RunParam("", -5., "Min value of the genotype"), # WARNING, some variants do not use it at all. -5 seems reasonable for NN weights
 	"max": RunParam("", 5., "Min value of the genotype"), # WARNING, some variants do not use it at all. 5 seems reasonable for NN weights
