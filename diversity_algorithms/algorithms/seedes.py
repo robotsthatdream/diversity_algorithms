@@ -41,7 +41,7 @@ def build_toolbox_seedes(evaluate, params, pool=None):
         # Polynomial mutation with eta=15, and p=0.1 as for Leni
         toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["eta_m"], indpb=params["indpb"], low=params["min"], up=params["max"])
     
-    elif(geno_type == "dnn"):
+    elif(params["geno_type"] == "dnn"):
         print("** Unsing dymamic structure networks (DNN) **")
         # With DNN (dynamic structure networks)
         #---------
@@ -129,6 +129,7 @@ def seedes(evaluate, params, pool):
             for i in samples_per_seed[s]:
                 cumul+=i.novelty
             population[s].fitness.values=(cumul_distance(samples_per_seed[s]), cumul)
+            population[s].fit=(cumul_distance(samples_per_seed[s]), cumul)
             population[s].novelty=-1 # to simplify stats
             #print("Cumul distance: %f, cumul novelty: %f"%(population[s].fitness.values[0], population[s].fitness.values[1]))
 
