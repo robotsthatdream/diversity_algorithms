@@ -67,9 +67,10 @@ params={
 	"lambda": RunParam("l", 2., "Number of offspring generated (coeff on pop_size)"),
 	"env_name": RunParam("e", "FastsimSimpleNavigation-v0", "gym environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
-	"evolvability_period": RunParam("V", 100, "period of evolvability estimation"),
+	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
-	"dump_period_pop": RunParam("d", 1, "period of population dump"),
+	"dump_period_population": RunParam("d", 1, "period of population dump"),
+	"dump_period_archive": RunParam("D", 1, "period of archive dump"),
 	"variant": RunParam("a", "NS", "variant of the Novelty Search algorithm"),
 	"cxpb": RunParam("", 0, "cross-over rate"), # No crossover
 	"mutpb": RunParam("",1., "mutation rate"),  # All offspring are mutated...

@@ -113,7 +113,7 @@ def merge_gens(gendict,max_gen=-1, min_gen=-1):
     return out
 
 
-def get_exp_files(resdir, variant, cond_files):
+def get_exp_files(resdir, variant, cond_files, verbose=False):
     """Gets only the experiments that respect some conditions.
 
     Gets only the experiments that respect some conditions.
@@ -130,15 +130,17 @@ def get_exp_files(resdir, variant, cond_files):
                 edir=resdir+"/"+f.name
                 for p in cond_files:
                     if not os.path.isfile(edir+"/"+p):
-                        print(p+" not found in :\n\t"+edir)
+                        if verbose:
+                            print(p+" not found in :\n\t"+edir)
                         to_keep=False
                         break
                 if to_keep:
-                    print("Result to keep: "+edir)
+                    if verbose:
+                        print("Result to keep: "+edir)
                     eres.append(edir)
     return eres
                     
-def get_exp_files_params(resdir, variant, cond_files, params):
+def get_exp_files_params(resdir, variant, cond_files, params, verbose=False):
     """Gets only the experiments that respect some conditions: existing files and params values.
 
     Gets only the experiments that respect some conditions.
@@ -156,7 +158,8 @@ def get_exp_files_params(resdir, variant, cond_files, params):
                 edir=resdir+"/"+f.name
                 for p in cond_files:
                     if not os.path.isfile(edir+"/"+p):
-                        print(p+" not found in :\n\t"+edir)
+                        if verbose:
+                            print(p+" not found in :\n\t"+edir)
                         to_keep=False
                         break
                 if to_keep:
@@ -167,7 +170,8 @@ def get_exp_files_params(resdir, variant, cond_files, params):
                             to_keep=False
                             break
                     if to_keep:
-                        print("Result to keep: "+edir)
+                        if verbose:
+                            print("Result to keep: "+edir)
                         eres.append(edir)
     return eres
                     

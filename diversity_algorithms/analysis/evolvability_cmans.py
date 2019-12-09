@@ -12,7 +12,7 @@ from diversity_algorithms.algorithms.stats import *
 from diversity_algorithms.algorithms.utils import * 
 
 from diversity_algorithms.algorithms import grid_features
-from diversity_algorithms.algorithms.cma_ns import generate_CMANS, CMANS_Strategy_C_rank_one, Indiv_CMANS
+from diversity_algorithms.algorithms.cmans import generate_CMANS, CMANS_Strategy_C_rank_one, Indiv_CMANS
 
 
 from os import path
@@ -21,7 +21,7 @@ from os import path
 # Yes, this is ugly. This is DEAP's fault.
 # See https://github.com/DEAP/deap/issues/57
 
-from diversity_algorithms.algorithms.cma_ns import set_creator_cmans
+from diversity_algorithms.algorithms.cmans import set_creator_cmans
 set_creator_cmans(creator)
 
 nbfitobj=2 #len(pop[0].fitness.values)

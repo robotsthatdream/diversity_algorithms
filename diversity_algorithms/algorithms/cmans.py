@@ -45,6 +45,24 @@ class Indiv_CMANS(object):
     def print_params(self):
         if (hasattr(self, "strategy") and self.strategy is not None): 
             return self.strategy.print_params()
+
+    def dump_to_dict(self, out_dict, i, attrs):
+        # Dumps to out_dict with attributes (attribute_%d)%(i), i being supposed to be the index of the ind in the dump
+        #print("Ind attributes: "+str(self.__dict__.keys()))
+        #print("Ind strategy attributes: "+str(self.strategy.__dict__.keys()))
+        if ("all" in attrs):
+            myattrs=attrs+["centroid", "C", "sigma", "w", "ccov", "fit", "novelty", "bd"]
+        else:
+            myattrs=attrs
+        for k in self.strategy.__dict__.keys():
+            if (k in myattrs):
+                out_dict[k+"_%d" % (i)] = np.array(getattr(self.strategy,k))
+        for k in self.__dict__.keys():
+            if (k in myattrs):
+                out_dict[k+"_%d" % (i)] = np.array(getattr(self,k))
+        #if ((hasattr(ind,'evolvability_samples')) and (self.evolvability_samples is not None)):
+        #    for (j,indj) in enumerate(self.evolvability_samples):
+        #            out_dict["es_%d_%d" %(i,j)] = indj.bd 
         
 class CMANS_Strategy_C_rank_one:
     def __init__(self, ind_init, centroid, sigma, w, lambda_, ccov=0.2):
@@ -93,7 +111,7 @@ class CMANS_Strategy_C_rank_one:
         #print("After update of C: min=%f max=%f"%(self.C.min(), self.C.max()))
 
         
-        
+
 def generate_CMANS(icls, scls, size, xmin, xmax, sigma, w, lambda_=100, ccov=0.2):
     centroid = [random.uniform(xmin, xmax) for _ in range(size)]
     ind = icls(centroid)
@@ -113,7 +131,7 @@ def build_toolbox_cmans(evaluate,params,pool=None):
     # -------------
     toolbox.register("attr_float", lambda : random.uniform(params["min"], params["max"]))
     
-    toolbox.register("individual", generate_CMANS, creator.Individual, CMANS_Strategy_C_rank_one, size=params["ind_size"], xmin=params["min"], xmax=params["max"], sigma=params["sigma"], w=[1]*params["cmamu"], lambda_ = params["pop_size"], ccov=params["ccov"])
+    toolbox.register("individual", generate_CMANS, creator.Individual, CMANS_Strategy_C_rank_one, size=params["ind_size"], xmin=params["min"], xmax=params["max"], sigma=params["sigma"], w=[1]*params["cma_lambda"], lambda_ = params["cma_lambda"], ccov=params["ccov"])
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("select", tools.selNSGA2)
         
@@ -205,6 +223,7 @@ def cmans(evaluate, params, pool):
                 i.dist_to_model=np.linalg.norm(np.array(population[s].bd)-np.array(i.bd))
                 cumul+=i.novelty
             population[s].fitness.values=(cumul_distance(samples_per_seed[s]), cumul)
+            population[s].fit=(cumul_distance(samples_per_seed[s]), cumul)
             population[s].novelty=-1 # to simplify stats
 
             population[s].strategy.update(samples_per_seed[s], params["variant"])
@@ -229,7 +248,10 @@ def cmans(evaluate, params, pool):
             else:
                 print(".", end='', flush=True)
                 
-        #generate_dumps(run_name, dump_period_bd, dump_period_pop, population, all_samples, gen, pop1label="population", pop2label="all_samples", archive=archive, logbook=logbook, pop_to_dump=[True, False])
+        dump_data(population, gen, params, prefix="population", attrs=["all"])
+        dump_data(population, gen, params, prefix="bd", complementary_name="population", attrs=["bd"])
+        dump_data(all_samples, gen, params, prefix="bd", complementary_name="all_samples", attrs=["bd"])
+        dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"])
         
         generate_evolvability_samples(params, population, gen, toolbox)
         

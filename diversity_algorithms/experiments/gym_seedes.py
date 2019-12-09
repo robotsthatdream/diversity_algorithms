@@ -65,12 +65,13 @@ def eval_with_functor(g):
 params={
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
 	"pop_size": RunParam("p", 10, "population size (mu)"),
-	"lambda": RunParam("l", 2., "Number of offspring generated (coeff on pop_size)"),
+	"seed_lambda": RunParam("l", 10, "Number of offspring generated per seed"),
 	"env_name": RunParam("e", "FastsimSimpleNavigation-v0", "gym environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
-	"evolvability_period": RunParam("V", 100, "period of evolvability estimation"),
+	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
-	"dump_period_pop": RunParam("d", 1, "period of population dump"),
+	"dump_period_population": RunParam("d", 1, "period of population dump"),
+	"dump_period_archive": RunParam("D", 1, "period of archive dump"),
 	"variant": RunParam("a", "SES", "variant of the SeedES Novelty Search algorithm"),
 	"cxpb": RunParam("", 0, "cross-over rate"), # No crossover
 	"alpha": RunParam("", 0.1, "cross-over parameter"), # No crossover

@@ -81,34 +81,75 @@ def dump_end_of_exp(run_name):
     f.write("-- Ended at: "+sd+"\n")
     f.close()
 
-    
-def dump_pop(pop, gen, run_name="runXXX", prefix="pop"):
-    out_dict = {"gen": gen, "size": len(pop)}
-    for (i,ind) in enumerate(pop):
-        if(hasattr(ind,'strategy')):
-            out_dict["centroid_%d" % i] = np.array(ind.strategy.centroid)
-            out_dict["C_%d" % i] = np.array(ind.strategy.C)
-            out_dict["sigma_%d" % i] = np.array(ind.strategy.sigma)
-            out_dict["w_%d" % i] = np.array(ind.strategy.w)
-            out_dict["ccov_%d" % i] = np.array(ind.strategy.ccov)
-        else:
-            out_dict["geno_%d" % i] = np.array(ind)
-        if(ind.fitness.valid):
-            out_dict["fitness_%d" % i] = ind.fitness.values
-            if(hasattr(ind,'novelty')):
-                out_dict["novelty_%d" % i] = ind.novelty
-            if(hasattr(ind,'bd')):
-                out_dict["bd_%d" % i] = ind.bd
-            if ((hasattr(ind,'evolvability_samples')) and (ind.evolvability_samples is not None)):
-                for (j,indj) in enumerate(ind.evolvability_samples):
-                    out_dict["es_%d_%d" %(i,j)] = indj.bd 
+def verbosity(params, value=["all"]):
+	return params["verbosity"] in value
+			    
 
-                
+def dump_params(params, run_name="runXXX"):
     try:
         os.mkdir(run_name)
     except OSError:
         pass
-    np.savez(run_name+"/"+prefix+"_gen%d.npz" % gen, **out_dict) 
+    #stat=params["STATS"]
+    #params["STATS"]=None # pickle can't save some parts of the stat
+    np.savez(run_name+"/params.npz", **params) 
+    #params["STATS"]=stat
+
+def dump_logbook(logbook,gen,run_name="runXXX"):
+    if (logbook is None):
+        return
+    out_dict = {}
+    for k in logbook.header:
+        out_dict[k]=logbook.select(k)
+    try:
+        os.mkdir(run_name)
+    except OSError:
+        pass
+    np.savez(run_name+"/logbook_gen%d.npz" % gen, **out_dict) 
+    
+def dump_data(data_list, gen, params, prefix="population", complementary_name="", attrs=["all"], force=False):
+	# should fit to dump any data required. Examples:
+	# dump_data(pop, gen, params, prefix="pop", complementary_name="", attrs=["all"]) to dump the whole pop
+	# dump_data(pop[i].evolvability_samples, gen, params, prefix="bd_es", complementary_name="%d"%(i), attrs=["bd"]) to dump the bd of evolvability samples
+	# dump_data(archive.all_bd, gen, params, prefix="archive", complementary_name="", attrs=["ind"]) to dump the archive (novelty search)
+	# dump_data(archive.get_content_as_list(), gen, params, prefix="archive_qd", complementary_name="", attrs=["bd", "novelty"]) to dump the archive (qd)
+	
+
+	if (not force) and ("dump_period_"+prefix not in params):
+		print("ERROR: tryind to dump data without saying at what period to do it. You need to define a dump_period_"+prefix+" parameter.")
+		return
+
+	if (force) or ((params["dump_period_"+prefix] >0) and (gen % params["dump_period_"+prefix] == 0)): 
+		out_dict = {"gen": gen, "size": len(data_list)}
+		for (i,ind) in enumerate(data_list):
+			#print("Ind attributes: "+str(ind.__dict__.keys()))
+			try:
+				ind.dump_to_dict(out_dict,i, attrs)
+			except AttributeError:
+				if ("all" in attrs):
+					myattrs=attrs+["ind", "fit", "novelty", "bd"]
+				else:
+					myattrs=attrs
+				if ("ind" in myattrs):
+					out_dict["ind_%d" % i] = np.array(ind)
+				if (hasattr(ind, "__dict__")):
+					for k in ind.__dict__.keys():
+						if (k in myattrs):
+							try:
+								out_dict[k+"_%d" % (i)] = np.array(getattr(ind,k))
+							except AttributeError:
+								pass
+
+		    #if (("evolvability_samples" in attrs) or ("all" in attrs)) and ((hasattr(ind,'evolvability_samples')) and (ind.evolvability_samples is not None)):
+		    #	    for (j,indj) in enumerate(ind.evolvability_samples):
+		    #		    out_dict["es_%d_%d" %(i,j)] = indj.bd 
+		try:
+			os.mkdir(params["run_name"])
+		except OSError:
+			pass
+		if (complementary_name!= ""):
+			complementary_name+="_"
+		np.savez(params["run_name"]+"/"+prefix+"_"+complementary_name+"_".join(attrs)+"_gen%d.npz" % gen, **out_dict) 
 
 def load_pop(dumpfile):
     pop_dict=np.load(dumpfile, allow_pickle=True)
@@ -178,106 +219,29 @@ def load_pop_toolbox(dumpfile, toolbox):
         pop.append(ind)
     return pop
 		    
-def verbosity(params, value=["all"]):
-	return params["verbosity"] in value
-			    
-
-def dump_archive(archive, gen, run_name="runXXX"):
-    out_dict = {"gen": gen, "size": archive.size()}
-    for (i,ind) in enumerate(archive.all_bd):
-        out_dict["bd_%d" % i] = np.array(ind)
-    try:
-        os.mkdir(run_name)
-    except OSError:
-        pass
-    np.savez(run_name+"/archive_gen%d.npz" % gen, **out_dict) 
-
-# TODO: Should unify
-def dump_archive_qd(archive, gen, run_name="runXXX"):
-    out_dict = {"gen": gen, "size": archive.size()}
-    content = archive.get_content_as_list()
-    for (i,ind) in enumerate(content):
-        out_dict["bd_%d" % i] = np.array(ind.bd)
-        out_dict["nov_%d" % i] = ind.novelty
-    try:
-        os.mkdir(run_name)
-    except OSError:
-        pass
-    np.savez(run_name+"/archive_gen%d.npz" % gen, **out_dict) 
-
-
-
-def dump_params(params, run_name="runXXX"):
-    try:
-        os.mkdir(run_name)
-    except OSError:
-        pass
-    #stat=params["STATS"]
-    #params["STATS"]=None # pickle can't save some parts of the stat
-    np.savez(run_name+"/params.npz", **params) 
-    #params["STATS"]=stat
-
-def dump_logbook(logbook,gen,run_name="runXXX"):
-    if (logbook is None):
-        return
-    out_dict = {}
-    for k in logbook.header:
-        out_dict[k]=logbook.select(k)
-    try:
-        os.mkdir(run_name)
-    except OSError:
-        pass
-    np.savez(run_name+"/logbook_gen%d.npz" % gen, **out_dict) 
-
 def generate_evolvability_samples(params, population, gen, toolbox):
     """Generates a sample of individuals from the given population. 
 
     Generates a sample of individuals from the given population. It either relies on the toolbox (with the crossover and mutation probabilities) or on the strategy (if the individuals have one) to generate the points. 
     """
 
-    if (params["evolvability_nb_samples"]>0) and (params["evolvability_period"]>0) and (gen>0) and (gen % params["evolvability_period"]==0):
+    if (params["evolvability_nb_samples"]>0) and (params["dump_period_evolvability"]>0) and (gen>0) and (gen % params["dump_period_evolvability"]==0):
         print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(params["evolvability_nb_samples"]))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
-        for ind in population:
+        for (i,ind) in enumerate(population):
             print(".", end='', flush=True)
-            if (hasattr(ind, 'strategy')):
+            try:
                 ind.evolvability_samples=ind.strategy.generate_samples(params["evolvability_nb_samples"])
                 fitnesses = toolbox.map(toolbox.evaluate, ind.evolvability_samples)
                 for indes, fit in zip(ind.evolvability_samples, fitnesses):
                     indes.fitness.values = fit[0] 
                     indes.bd = fit[1]
                     indes.evolvability_samples=None # SD: required, otherwise, the memory usage explodes... I do not understand why yet.
-                
-            else:
+            except AttributeError:
                     ind.evolvability_samples=sample_from_pop([ind],toolbox,params["evolvability_nb_samples"],params["cxpb"],params["mutpb"])
-            dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
-            for inde in ind.evolvability_samples:
-                dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")
-            dump_bd_evol.close()
+
+            dump_data(ind.evolvability_samples,gen, params, prefix="evolvability", complementary_name="ind%d"%(i), attrs=["bd"])
             ig+=1
         print("")
 
-
-def generate_dumps(run_name, dump_period_bd, dump_period_pop, pop1, pop2, gen, pop1label="population", pop2label="offspring", archive=None, logbook=None, pop_to_dump=[True, True]):
-    #print("Dumping data. Gen="+str(gen)+" dump_period_bd="+str(dump_period_bd)+" dump_period_pop="+str(dump_period_pop))
-    if(dump_period_bd and (gen % dump_period_bd == 0)): # Dump behavior descriptors
-        dump_bd=open(run_name+"/bd_%04d_%s.log"%(gen,pop1label),"w")
-        for ind in pop1:
-            dump_bd.write(" ".join(map(str,ind.bd))+"\n")
-        dump_bd.close()
-        if (pop2 is not None):
-            dump_bd=open(run_name+"/bd_%04d_%s.log"%(gen,pop2label),"w")
-            for ind in pop2:
-                dump_bd.write(" ".join(map(str,ind.bd))+"\n")
-            dump_bd.close()
-    
-    if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump populatio    if dump_period_pop:
-        if(pop1 is not None and pop_to_dump[0]):
-            dump_pop(pop1, gen, run_name, pop1label)
-        if(pop2 is not None and pop_to_dump[1]):
-            dump_pop(pop2, gen,run_name, pop2label)
-        if (archive is not None):
-            dump_archive(archive, gen,run_name)
-        if (logbook is not None):
-            dump_logbook(logbook, gen,run_name)

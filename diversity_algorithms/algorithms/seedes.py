@@ -75,7 +75,7 @@ def seedes(evaluate, params, pool):
 
     population = toolbox.population(n=params["pop_size"])
 
-    lambda_ = int(params["lambda"]*params["pop_size"])
+    lambda_ = params["seed_lambda"]
 
     logbook = tools.Logbook()
     logbook.header = ['gen', 'nevals']
@@ -151,8 +151,11 @@ def seedes(evaluate, params, pool):
             else:
                 print(".", end='', flush=True)
 
-        #generate_dumps(run_name, dump_period_bd, dump_period_pop, population, all_samples, gen, pop1label="population", pop2label="all_samples", archive=archive, logbook=logbook)
-        
+        dump_data(population, gen, params, prefix="population", attrs=["all"])
+        dump_data(population, gen, params, prefix="bd", complementary_name="population", attrs=["bd"])
+        dump_data(all_samples, gen, params, prefix="bd", complementary_name="all_samples", attrs=["bd"])
+        dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"])
+
         generate_evolvability_samples(params, population, gen, toolbox)
         
         # Update the statistics with the new population

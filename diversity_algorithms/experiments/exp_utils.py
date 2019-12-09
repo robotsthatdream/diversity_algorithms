@@ -90,7 +90,7 @@ def analyze_params(params, argv):
             sys.exit(1)
         params[k].set_value(arg)
 
-def preparing_run(eval_gym, params, with_scoop):
+def preparing_run(eval_gym, params, with_scoop, deap=True):
 
     if with_scoop:
         from scoop import futures
@@ -130,21 +130,37 @@ def preparing_run(eval_gym, params, with_scoop):
     sparams["min_bd"]=min_bd # not used by NS. It is just to keep track of it in the saved param file
     sparams["max_bd"]=max_bd # not used by NS. It is just to keep track of it in the saved param file
     
-    # We use a different window size to compute statistics in order to have the same number of points for population and offspring statistics
-    window_population=nbs/sparams["pop_size"]
-    window_offspring=nbs/(sparams["lambda"]*sparams["pop_size"])
-    
-    if (sparams["evolvability_period"]>0) and (evolvability_nb_samples>0):
-        stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=True,min_x=min_bd,max_x=max_bd,nb_bin=nb_bin_bd, gen_window_global=window_population)
-        stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_",indiv=True,min_x=min_bd,max_x=max_bd,nb_bin=nb_bin_bd, gen_window_global=window_offspring)
-    else:
-        stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=False,min_x=min_bd,max_x=max_bd,nb_bin=nb_bin_bd, gen_window_global=window_population)
-        stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_", indiv=False,min_x=min_bd,max_x=max_bd,nb_bin=nb_bin_bd, gen_window_global=window_offspring)
-        
-    sparams["stats"] = stats # Statistics
-    sparams["stats_offspring"] = stats_offspring # Statistics on offspring
-    sparams["window_population"]=window_population
-    sparams["window_offspring"]=window_offspring
+    if deap:
+        # We use a different window size to compute statistics in order to have the same number of points for population and offspring statistics
+        window_population=nbs/sparams["pop_size"]
+        if ("lambda" in sparams):
+            window_offspring=nbs/(sparams["lambda"])
+        elif("cma_lambda" in sparams):
+            window_offspring=nbs/(sparams["cma_lambda"]*sparams["pop_size"])
+        elif("seed_lambda" in sparams):
+            window_offspring=nbs/(sparams["seed_lambda"]*sparams["pop_size"])
+        else:
+            print("ERROR: we don't know how to set window_offspring")
+            window_offspring=None
+
+        if (sparams["dump_period_evolvability"]>0) and (evolvability_nb_samples>0):
+            stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=True,min_x=min_bd,max_x=max_bd,nb_bin=nb_bin_bd, gen_window_global=window_population)
+            if (window_offspring is not None):
+                stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_",indiv=True,min_x=min_bd,max_x=max_bd,nb_bin=nb_bin_bd, gen_window_global=window_offspring)
+        else:
+            stats=get_stat_fit_nov_cov(grid,prefix="population_",indiv=False,min_x=min_bd,max_x=max_bd,nb_bin=nb_bin_bd, gen_window_global=window_population)
+            if (window_offspring is not None):
+                stats_offspring=get_stat_fit_nov_cov(grid_offspring,prefix="offspring_", indiv=False,min_x=min_bd,max_x=max_bd,nb_bin=nb_bin_bd, gen_window_global=window_offspring)
+            
+        sparams["stats"] = stats # Statistics
+        sparams["window_population"]=window_population
+        if (window_offspring is not None):
+            sparams["stats_offspring"] = stats_offspring # Statistics on offspring
+            sparams["window_offspring"]=window_offspring
+        else:
+            sparams["stats_offspring"] = None
+            sparams["window_offspring"]= None
+
     sparams["run_name"]=run_name
     
     print("Launching a run with the following parameter values:")
@@ -152,7 +168,7 @@ def preparing_run(eval_gym, params, with_scoop):
         print("\t"+k+": "+str(sparams[k]))
     if (grid is None):
         print("WARNING: grid features have not been defined for env "+sparams["env_name"]+". This will have no impact on the run, except that the coverage statistic has been turned off")
-    if (sparams["evolvability_period"]>0) and (evolvability_nb_samples>0):
+    if (sparams["dump_period_evolvability"]>0) and (evolvability_nb_samples>0):
         print("WARNING, evolvability_nb_samples>0. The run will last much longer...")
 
     if with_scoop:
@@ -166,9 +182,12 @@ def preparing_run(eval_gym, params, with_scoop):
 
 def terminating_run(sparams, pop, archive, logbook):
 
-    dump_pop(pop,sparams["nb_gen"],sparams["run_name"])
-    dump_logbook(logbook,sparams["nb_gen"],sparams["run_name"])
-    dump_archive(archive,sparams["nb_gen"],sparams["run_name"])
+    if (pop is not None):
+        dump_data(pop,sparams["nb_gen"],sparams, prefix="final_pop", attrs=["all"], force=True)
+    if (logbook is not None):
+        dump_logbook(logbook,sparams["nb_gen"],sparams["run_name"])
+    if (archive is not None):
+        dump_data(archive.get_content_as_list(),sparams["nb_gen"],sparams, prefix="final_archive", attrs=["bd"], force=True)
     
     dump_end_of_exp(sparams["run_name"])
     

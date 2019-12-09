@@ -233,8 +233,11 @@ def novelty_ea(evaluate, params, pool=None):
         else:
             population[:] = toolbox.select(pq, params["pop_size"])        
 
-        #generate_dumps(run_name, dump_period_bd, dump_period_pop, population, offspring, gen, pop1label="population", pop2label="offspring", archive=archive, logbook=logbook)
-        
+        dump_data(population, gen, params, prefix="population", attrs=["all"])
+        dump_data(population, gen, params, prefix="bd", complementary_name="population", attrs=["bd"])
+        dump_data(offspring, gen, params, prefix="bd", complementary_name="offspring", attrs=["bd"])
+        dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"])
+
         generate_evolvability_samples(params, population, gen, toolbox)
         
         # Update the statistics with the new population

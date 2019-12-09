@@ -20,7 +20,7 @@ import dill
 import pickle
 import math
 
-from diversity_algorithms.algorithms.cma_ns import cmans, Indiv_CMANS
+from diversity_algorithms.algorithms.cmans import cmans, Indiv_CMANS
 from diversity_algorithms.algorithms.utils import *
 
 from diversity_algorithms.experiments.exp_utils import *
@@ -30,7 +30,7 @@ from diversity_algorithms.experiments.exp_utils import *
 # Yes, this is ugly. This is DEAP's fault.
 # See https://github.com/DEAP/deap/issues/57
 
-from diversity_algorithms.algorithms.cma_ns import set_creator_cmans
+from diversity_algorithms.algorithms.cmans import set_creator_cmans
 set_creator_cmans(creator)
 
  
@@ -60,12 +60,13 @@ def eval_with_functor(g):
 params={
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
 	"pop_size": RunParam("p", 10, "population size (mu)"),
-	"lambda": RunParam("l", 2., "Number of offspring generated (coeff on pop_size)"),
+	#"lambda": RunParam("l", 10, "Number of offspring generated per model"),
 	"env_name": RunParam("e", "FastsimSimpleNavigation-v0", "gym environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
-	"evolvability_period": RunParam("V", 100, "period of evolvability estimation"),
+	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
-	"dump_period_pop": RunParam("d", 1, "period of population dump"),
+	"dump_period_population": RunParam("d", 1, "period of population dump"),
+	"dump_period_archive": RunParam("D", 1, "period of archive dump"),
 	"variant": RunParam("a", "CMANS", "variant of the CMANS Novelty Search algorithm"),
 	"cxpb": RunParam("", 0, "cross-over rate"), # No crossover
 	"mutpb": RunParam("",1., "mutation rate"),  # All offspring are mutated...
@@ -78,7 +79,7 @@ params={
 	"lambda_nov": RunParam("", 6, "number of indiv added to the archive at each gen"),
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
 	"ccov": RunParam("c", 0.2, "coeff of the sample estimated C in the covariance matrix update"),
-	"cmamu": RunParam("m", 10, "number of samples to generate to update C"),
+	"cma_lambda": RunParam("l", 10, "number of samples to generate to update C"),
 	"sigma": RunParam("S", 1, "sigma coefficient for covariance matrix update")
 	}
 

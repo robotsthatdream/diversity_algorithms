@@ -12,7 +12,8 @@ def plot_violin(res, x_label="", y_label="", title=""):
     Makes a violin plot of the results provided in the argument.
     :param res: dictionary of the results to plot. The key is the name and the data is a vector of performance values.
     """
-    fig,ax=plt.subplots(figsize=(5,5))
+
+    fig,ax=plt.subplots(figsize=(10,10))
     data=[]
     labels=[]
     for k in res.keys():

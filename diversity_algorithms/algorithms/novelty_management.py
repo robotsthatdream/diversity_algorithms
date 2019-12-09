@@ -20,7 +20,10 @@ class NovArchive:
 
     def ready(self):
         return self.size()>self.k
-    
+
+    def get_content_as_list(self):
+        return self.all_bd
+
     def update(self,new_bd):
         oldsize=len(self.all_bd)
         if (oldsize>0):
