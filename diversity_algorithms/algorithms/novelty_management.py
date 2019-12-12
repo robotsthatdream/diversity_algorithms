@@ -2,7 +2,7 @@
 import random
 from scipy.spatial import KDTree
 import numpy as np
-
+from operator import attrgetter
 from diversity_algorithms.algorithms.utils import verbosity
 
 
@@ -112,7 +112,7 @@ def updateNovelty(population, offspring, archive, params):
            print("Random archive update. Adding offspring: "+str(l[:_lambda])) 
        lbd=[offspring2[l[i]].bd for i in range(_lambda)]
    elif(add_strategy=="novel"):
-       soff=sorted(offspring2,lambda x:x.novelty)
+       soff=sorted(offspring2,key=attrgetter("novelty"))
        ilast=len(offspring2)-_lambda
        lbd=[soff[i].bd for i in range(ilast,len(soff))]
        if (verbosity(params,["all", "novelty"])):
