@@ -72,15 +72,25 @@ class CMANS_Strategy_C_rank_one:
         self.sigma=sigma
         self.w=[ww/sum(w) for ww in w] # weights must sum to one
         self.ccov=ccov
-        self.muw=1./sum([ww**2 for ww in w])
+        self.muw=1./sum([ww**2 for ww in self.w])
         self.lambda_=lambda_
         self.mu=len(w)
+
+        self.diagD, self.B = np.linalg.eigh(self.C)
+        indx = np.argsort(self.diagD)
+
+        self.cond = self.diagD[indx[-1]] / self.diagD[indx[0]]
+
+        self.diagD = self.diagD[indx] ** 0.5
+        self.B = self.B[:, indx]
+        self.BD = self.B * self.diagD
+
 
     def print_params(self):
         return "Centroid: "+str(self.centroid)+" C: "+str(self.C)+" sigma: "+str(self.sigma)+" w: "+str(self.w)+" ccov: "+str(self.ccov)+" lambda: "+str(self.lambda_)+" mu: "+str(self.mu)
         
     def generate_samples(self, lambda_):
-        arz = [ self.centroid + self.sigma*np.dot(np.random.standard_normal(self.centroid.shape),self.C.T) for _ in range(lambda_)]
+        arz = [ self.centroid + self.sigma*np.dot(np.random.standard_normal(self.centroid.shape),self.BD.T) for _ in range(lambda_)]
         npop= [ self.ind_init() for _ in range(lambda_)]
         #print("Generate: ")
         for centroid,p in zip(arz,npop):
@@ -104,12 +114,21 @@ class CMANS_Strategy_C_rank_one:
         #print("Len y=%d mu=%d muw=%f"%(len(y), self.mu, self.muw))
         yw=np.array([sum([self.w[i]*y[i] for i in range(self.mu)])])
         #print("Len yw=%d yw="%(len(yw))+str(yw))
-        ywywT=np.dot(yw.T,yw)
+        ywywT= np.dot(yw.T,yw)
+
         #print("yw.ywT="+str(ywywT))
         self.C = (1.-self.ccov)*self.C + self.ccov * self.muw * ywywT
         #print("Updated C: "+str(self.C))
         #print("After update of C: min=%f max=%f"%(self.C.min(), self.C.max()))
 
+        self.diagD, self.B = np.linalg.eigh(self.C)
+        indx = np.argsort(self.diagD)
+
+        self.cond = self.diagD[indx[-1]] / self.diagD[indx[0]]
+
+        self.diagD = self.diagD[indx] ** 0.5
+        self.B = self.B[:, indx]
+        self.BD = self.B * self.diagD
         
 
 def generate_CMANS(icls, scls, size, xmin, xmax, sigma, w, lambda_=100, ccov=0.2):
