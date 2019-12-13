@@ -33,4 +33,6 @@ def plot_violin(res, x_label="", y_label="", title=""):
     plt.setp(ax, xticks=[y + 1 for y in range(len(data))],
         xticklabels=labels)
     plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
+    if (title!=""):
+        plt.savefig(title+".pdf")
     plt.show()
