@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import os,sys
 import re
+import numpy as np
 
 def listify(x):
     if(type(x) is list or x is None): # If it's already a list, return it
@@ -17,8 +18,8 @@ def listify(x):
 
 
 
-
-re_bd_evolvability_file = re.compile("bd_evol_indiv...._gen(....).log")
+re_bd_evolvability_file = re.compile("evolvability_ind(?:\d+)_bd_gen(\d+).npz")
+#re_bd_evolvability_file = re.compile("bd_evol_indiv...._gen(....).log")
 re_bdfile = re.compile("bd_(....)_offspring.log")
 re_bdfile_model = re.compile("bd_evol_model_gen(....).log")
 re_bdfile_old = re.compile("bd_(....).log")
