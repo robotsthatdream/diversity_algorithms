@@ -96,7 +96,11 @@ def preparing_run(eval_gym, params, with_scoop, deap=True):
         from scoop import futures
 
     # Dumping how the run has been launched
-    run_name=generate_exp_name(params["env_name"].get_value()+"_"+params["variant"].get_value())
+    if ("run_dir_name" in params.keys()) and (params["run_dir_name"].get_value()!=""):      
+        print("Run dir name: "+params["run_dir_name"].get_value())
+        run_name=generate_exp_name(params["run_dir_name"].get_value()+"/"+params["env_name"].get_value()+"_"+params["variant"].get_value())
+    else:
+        run_name=generate_exp_name(params["env_name"].get_value()+"_"+params["variant"].get_value())
     print("Saving logs in "+run_name)
     dump_exp_details(sys.argv,run_name, params)
 

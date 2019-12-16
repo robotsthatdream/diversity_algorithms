@@ -4,6 +4,7 @@ import os
 import subprocess
 import dill
 import pickle
+import sys
 
 from diversity_algorithms.analysis.population_analysis import *
 
@@ -39,11 +40,14 @@ def generate_exp_name(name=""):
     not_created=True
     while(not_created):
         try:
-            os.mkdir(run_name+"_%d"%nb)
+            os.makedirs(run_name+"_%d"%nb)
             run_name+="_%d"%nb
             not_created=False
         except OSError:
             nb+=1
+            if (nb>10):
+                    print("Problem when trying to create the dir to host exp files. Dir="+run_name+"_0")
+                    sys.exit(1)
     return run_name
 
 def dump_exp_details(argv,run_name, params):
