@@ -9,7 +9,6 @@ import time
 #import resource
 
 from diversity_algorithms.controllers import SimpleNeuralController #, DNNController
-from diversity_algorithms.algorithms import bd_funcs
 
 # Fitness/evaluation function
 
@@ -17,7 +16,7 @@ default_max_step = 2000 # same as C++ sferes experiments
 
 
 class EvaluationFunctor:
-	def __init__(self, env=None, env_name=None, controller=None, controller_type=None, controller_params=None, output='total_reward',max_step=default_max_step, get_behavior_descriptor='auto'):
+	def __init__(self, gym_env_name=None, gym_params={}, controller=None, controller_type=None, controller_params=None, output='total_reward',max_step=default_max_step, bd_function=None):
 		global current_serial
 		#print("Eval functor created")
 		#Env
@@ -29,19 +28,15 @@ class EvaluationFunctor:
 		self.controller=controller
 		self.controller_type=controller_type
 		self.controller_params=controller_params
-		if ((env is not None) or (env_name is not None)):
-			self.set_env(env,env_name, (get_behavior_descriptor == 'auto'))
+		if (gym_env_name is not None):
+			self.set_env(gym_env_name, gym_params)
 		else:
 			self.env = None
-		if(get_behavior_descriptor != 'auto' and get_behavior_descriptor is not None): #Use provided function
-			self.get_behavior_descriptor = get_behavior_descriptor
+		self.get_behavior_descriptor = bd_function
 		
-	def set_env(self,env, env_name, with_bd=False):
-		if(env is None):
-			self.env = gym.make(env_name)
-			self.env.reset()
-		else:
-			self.env = env
+	def set_env(self, env_name, gym_params):
+		self.env = gym.make(env_name, **gym_params)
+		self.env.reset()
 		self.env_name = self.env.unwrapped.spec.id
 		if(self.controller is None): # Build controller
 			if(self.controller_type is None):
@@ -50,12 +45,6 @@ class EvaluationFunctor:
 		else:
 			if(self.controller_type is not None or self.controller_params is not None):
 				print("WARNING: EvaluationFunctor built with both controller and controller_type/controller_params. controller_type/controller_params arguments  will be ignored")
-		if(with_bd):
-			if(self.env_name not in bd_funcs):
-				print("WARNING: No BD extraction function known for Gym environment %s." % self.env_name)
-				self.get_behavior_descriptor = None
-			else:
-				self.get_behavior_descriptor = bd_funcs[self.env_name]
 
 
 

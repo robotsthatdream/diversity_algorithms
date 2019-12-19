@@ -2,4 +2,6 @@
 
 from diversity_algorithms.environments.gym_env import EvaluationFunctor
 
-__all__=["gym_env"]
+from diversity_algorithms.environments.environments import registered_environments
+
+__all__=["gym_env", "behavior_descriptors", "environments"]

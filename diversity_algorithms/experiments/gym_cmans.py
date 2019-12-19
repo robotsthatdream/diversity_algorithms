@@ -7,18 +7,17 @@ import numpy as np
 
 import gym, gym_fastsim
 
-from diversity_algorithms.environments import EvaluationFunctor
+from diversity_algorithms.environments import registered_environments
 from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
 from diversity_algorithms.algorithms.stats import * 
-
-from diversity_algorithms.algorithms import grid_features
 
 from deap import creator, base
 
 import dill
 import pickle
 import math
+import sys
 
 from diversity_algorithms.algorithms.cmans import cmans, Indiv_CMANS
 from diversity_algorithms.algorithms.utils import *
@@ -49,12 +48,10 @@ if with_scoop:
 # Each worker gets a functor
 nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
 #env, controller = generate_gym_env_and_controller(params=nnparams)
-eval_gym = EvaluationFunctor(controller_type=SimpleNeuralController,controller_params=nnparams,get_behavior_descriptor='auto')
+controller_params = {"controller_type":SimpleNeuralController,"controller_params":nnparams}
 
-# DO NOT pass the functor directly to futures.map -- this creates memory leaks
-# Wrapper that evals with the local functor
-def eval_with_functor(g):
-	return eval_gym(g)
+
+
 
 # declaration of params: RunParam(short_name (single letter for call from command line), default_value, doc)
 params={
@@ -62,7 +59,7 @@ params={
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
 	"pop_size": RunParam("p", 10, "population size (mu)"),
 	#"lambda": RunParam("l", 10, "Number of offspring generated per model"),
-	"env_name": RunParam("e", "FastsimSimpleNavigation-v0", "gym environment name"),
+	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
 	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
@@ -82,15 +79,35 @@ params={
 	}
 
 analyze_params(params, sys.argv)
-	
-eval_gym.set_env(None,params["env_name"].get_value(), with_bd=True)
 
+#Get environment
+if params["env_name"].get_value() not in registered_environments:
+	print("ERROR Unknown environment %s" % params["env_name"].get_value())
+	sys.exit(1)
+
+environment = registered_environments[params["env_name"].get_value()]
+
+evaluator_class = environment["eval"]
+evaluator_params = environment["eval_params"]
+
+evaluator_params.update(controller_params)
+if "bd_func" in environment:
+	evaluator_params["bd_function"] = environment["bd_func"]
+
+
+eval_func = evaluator_class(**evaluator_params)
+
+
+# DO NOT pass the functor directly to futures.map -- this creates memory leaks
+# Wrapper that evals with the local functor
+def eval_with_functor(g):
+	return eval_func(g)
 
 # THIS IS IMPORTANT or the code will be executed in all workers
 if(__name__=='__main__'):
 	# Get env and controller
 
-	sparams, pool=preparing_run(eval_gym, params, with_scoop)
+	sparams, pool=preparing_run(eval_func, params, with_scoop)
 	
 	pop, archive, logbook = cmans(eval_with_functor, sparams, pool)
 

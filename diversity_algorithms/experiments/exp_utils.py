@@ -1,12 +1,10 @@
 import sys
 import getopt
 from diversity_algorithms.algorithms.utils import *
-from diversity_algorithms.environments import EvaluationFunctor
+from diversity_algorithms.environments import EvaluationFunctor, registered_environments
 from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
 from diversity_algorithms.algorithms.stats import * 
-
-from diversity_algorithms.algorithms import grid_features
 
 #__all__={"RunParam", "analyse_params", "get_simple_params_dict"}
 
@@ -106,11 +104,11 @@ def preparing_run(eval_gym, params, with_scoop, deap=True):
 
     # Completing the parameters (and putting them in a simple dict for future use)
     sparams=get_simple_params_dict(params)
-
-    if (sparams["env_name"] in grid_features.keys()):
-        min_bd=grid_features[sparams["env_name"]]["min_x"]
-        max_bd=grid_features[sparams["env_name"]]["max_x"]
-        nb_bin_bd=grid_features[sparams["env_name"]]["nb_bin"]
+    environment = registered_environments[sparams["env_name"]]
+    if "grid_features" in environment:
+        min_bd=environment["grid_features"]["min_x"]
+        max_bd=environment["grid_features"]["max_x"]
+        nb_bin_bd=environment["grid_features"]["nb_bin"]
         
         grid=build_grid(min_bd, max_bd, nb_bin_bd)
         grid_offspring=build_grid(min_bd, max_bd, nb_bin_bd)
