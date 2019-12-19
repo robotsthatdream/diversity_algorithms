@@ -88,6 +88,22 @@ def analyze_params(params, argv):
             sys.exit(1)
         params[k].set_value(arg)
 
+
+def create_functor(params, controller_params):
+    if params["env_name"].get_value() not in registered_environments:
+        print("ERROR Unknown environment %s" % params["env_name"].get_value())
+        sys.exit(1)
+    environment = registered_environments[params["env_name"].get_value()]
+
+    evaluator_class = environment["eval"]
+    evaluator_params = environment["eval_params"]
+
+    evaluator_params.update(controller_params)
+    if "bd_func" in environment:
+        evaluator_params["bd_function"] = environment["bd_func"]
+    eval_func = evaluator_class(**evaluator_params)
+    return eval_func
+
 def preparing_run(eval_gym, params, with_scoop, deap=True):
 
     if with_scoop:

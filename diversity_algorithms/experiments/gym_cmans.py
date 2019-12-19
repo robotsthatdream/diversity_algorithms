@@ -45,14 +45,6 @@ if with_scoop:
 	from scoop import futures
 
 
-# Each worker gets a functor
-nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
-#env, controller = generate_gym_env_and_controller(params=nnparams)
-controller_params = {"controller_type":SimpleNeuralController,"controller_params":nnparams}
-
-
-
-
 # declaration of params: RunParam(short_name (single letter for call from command line), default_value, doc)
 params={
 	"run_dir_name": RunParam("R", "", "name of the dir in which to put the dir with the run files"),
@@ -80,22 +72,15 @@ params={
 
 analyze_params(params, sys.argv)
 
-#Get environment
-if params["env_name"].get_value() not in registered_environments:
-	print("ERROR Unknown environment %s" % params["env_name"].get_value())
-	sys.exit(1)
 
-environment = registered_environments[params["env_name"].get_value()]
+# Controller definition :
+# Parameters of the neural net
+nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
+# Create a dict with all the properties of the controller
+controller_params = {"controller_type":SimpleNeuralController,"controller_params":nnparams}
 
-evaluator_class = environment["eval"]
-evaluator_params = environment["eval_params"]
-
-evaluator_params.update(controller_params)
-if "bd_func" in environment:
-	evaluator_params["bd_function"] = environment["bd_func"]
-
-
-eval_func = evaluator_class(**evaluator_params)
+# Get environment
+eval_func = create_functor(params, controller_params)
 
 
 # DO NOT pass the functor directly to futures.map -- this creates memory leaks
