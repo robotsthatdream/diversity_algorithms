@@ -7,12 +7,9 @@ import numpy as np
 
 import gym, gym_fastsim
 
-from diversity_algorithms.environments import EvaluationFunctor
 from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
 from diversity_algorithms.algorithms.stats import * 
-
-from diversity_algorithms.algorithms import grid_features
 
 from deap import creator, base
 
@@ -49,16 +46,6 @@ if with_scoop:
 	from scoop import futures
 
 
-env_name=None
-# Each worker gets a functor
-nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
-#env, controller = generate_gym_env_and_controller(params=nnparams)
-eval_gym = EvaluationFunctor(controller_type=SimpleNeuralController,controller_params=nnparams,get_behavior_descriptor='auto')
-
-# DO NOT pass the functor directly to futures.map -- this creates memory leaks
-# Wrapper that evals with the local functor
-def eval_with_functor(g):
-	return eval_gym(g)
 
 
 # declaration of params: RunParam(short_name (single letter for call from command line), default_value, doc)
@@ -66,7 +53,7 @@ params={
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
 	"pop_size": RunParam("p", 10, "population size (mu)"),
 	"seed_lambda": RunParam("l", 10, "Number of offspring generated per seed"),
-	"env_name": RunParam("e", "FastsimSimpleNavigation-v0", "gym environment name"),
+	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
 	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
@@ -89,15 +76,28 @@ params={
 	}
 
 analyze_params(params, sys.argv)
-	
-eval_gym.set_env(None,params["env_name"].get_value(), with_bd=True)
+
+
+# Controller definition :
+# Parameters of the neural net
+nnparams={"n_hidden_layers": 2, "n_neurons_per_hidden": 10}
+# Create a dict with all the properties of the controller
+controller_params = {"controller_type":SimpleNeuralController,"controller_params":nnparams}
+
+# Get environment
+eval_func = create_functor(params, controller_params)
+
+# DO NOT pass the functor directly to futures.map -- this creates memory leaks
+# Wrapper that evals with the local functor
+def eval_with_functor(g):
+	return eval_func(g)
 
 # THIS IS IMPORTANT or the code will be executed in all workers
 if(__name__=='__main__'):
 	# Get env and controller
 
 
-	sparams, pool=preparing_run(eval_gym, params, with_scoop)
+	sparams, pool=preparing_run(eval_func, params, with_scoop)
 	
 	pop, archive, logbook, nb_eval = seedes(eval_with_functor, sparams, pool)
 

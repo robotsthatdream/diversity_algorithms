@@ -7,7 +7,6 @@ import numpy as np
 
 import gym, gym_fastsim
 
-from diversity_algorithms.environments import registered_environments
 from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
 from diversity_algorithms.algorithms.stats import * 
