@@ -85,6 +85,7 @@ params={
 	"add_strategy": RunParam("s", "random", "strategy for archive inclusion (random or novel)"),
 	"lambda_nov": RunParam("", 6, "number of indiv added to the archive at each gen"),
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
+	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	}
 
 analyze_params(params, sys.argv)
@@ -98,6 +99,6 @@ if(__name__=='__main__'):
 
 	sparams, pool=preparing_run(eval_gym, params, with_scoop)
 	
-	pop, archive, logbook = seedes(eval_with_functor, sparams, pool)
+	pop, archive, logbook, nb_eval = seedes(eval_with_functor, sparams, pool)
 
-	terminating_run(sparams, pop, archive, logbook)
+	terminating_run(sparams, pop, archive, logbook, nb_eval)

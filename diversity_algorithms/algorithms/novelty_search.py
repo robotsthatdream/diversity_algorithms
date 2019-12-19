@@ -103,6 +103,8 @@ def novelty_ea(evaluate, params, pool=None):
     else:
         emo=False
 
+    nb_eval=0
+
     lambda_ = int(params["lambda"]*params["pop_size"])
 
     toolbox=build_toolbox_ns(evaluate,params,pool)
@@ -119,6 +121,7 @@ def novelty_ea(evaluate, params, pool=None):
 
     # Evaluate the individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
+    nb_eval+=len(invalid_ind)
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     # fit is a list of fitness (that is also a list) and behavior descriptor
 
@@ -174,6 +177,7 @@ def novelty_ea(evaluate, params, pool=None):
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+        nb_eval+=len(invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fit = fit[0]
             ind.fitness.values = fit[0]
@@ -233,10 +237,16 @@ def novelty_ea(evaluate, params, pool=None):
         else:
             population[:] = toolbox.select(pq, params["pop_size"])        
 
-        dump_data(population, gen, params, prefix="population", attrs=["all"])
-        dump_data(population, gen, params, prefix="bd", complementary_name="population", attrs=["bd"])
-        dump_data(offspring, gen, params, prefix="bd", complementary_name="offspring", attrs=["bd"])
-        dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"])
+        if (("eval_budget" in params.keys()) and (params["eval_budget"]!=-1) and (nb_eval>=params["eval_budget"])): 
+            params["nb_gen"]=gen
+            terminates=True
+        else:
+            terminates=False
+
+        dump_data(population, gen, params, prefix="population", attrs=["all"], force=terminates)
+        dump_data(population, gen, params, prefix="bd", complementary_name="population", attrs=["bd"], force=terminates)
+        dump_data(offspring, gen, params, prefix="bd", complementary_name="offspring", attrs=["bd"], force=terminates)
+        dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"], force=terminates)
 
         generate_evolvability_samples(params, population, gen, toolbox)
         
@@ -250,8 +260,11 @@ def novelty_ea(evaluate, params, pool=None):
         for ind in population:
             ind.evolvability_samples=None
 
+        if (terminates):
+            break
             
-    return population, archive, logbook
+            
+    return population, archive, logbook, nb_eval
 
 
 

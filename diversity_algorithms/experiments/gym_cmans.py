@@ -67,7 +67,8 @@ params={
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
 	"ccov": RunParam("c", 0.2, "coeff of the sample estimated C in the covariance matrix update"),
 	"cma_lambda": RunParam("l", 10, "number of samples to generate to update C"),
-	"sigma": RunParam("S", 1.0, "sigma coefficient for covariance matrix update")
+	"sigma": RunParam("S", 1.0, "sigma coefficient for covariance matrix update"),
+	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	}
 
 analyze_params(params, sys.argv)
@@ -94,9 +95,9 @@ if(__name__=='__main__'):
 
 	sparams, pool=preparing_run(eval_func, params, with_scoop)
 	
-	pop, archive, logbook = cmans(eval_with_functor, sparams, pool)
+	pop, archive, logbook, nb_eval = cmans(eval_with_functor, sparams, pool)
 
-	terminating_run(sparams, pop, archive, logbook)
+	terminating_run(sparams, pop, archive, logbook, nb_eval)
 
 	
 

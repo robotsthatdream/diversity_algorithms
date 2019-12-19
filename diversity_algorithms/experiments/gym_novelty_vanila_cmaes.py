@@ -58,7 +58,7 @@ params={
 	"add_strategy": RunParam("s", "random", "strategy for archive inclusion (random or novel)"),
 	"lambda_nov": RunParam("", 6, "number of indiv added to the archive at each gen"),
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
-	"nb_samples": RunParam("S", 10000, "total sample budget")
+	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	}
 
 analyze_params(params, sys.argv)
@@ -77,8 +77,8 @@ if(__name__=='__main__'):
                 print("Invalid variant: "+variant)
 
 
-	esresult, archive = cmaes(eval_with_functor, sparams, pool)
+	esresult, archive, nb_eval = cmaes(eval_with_functor, sparams, pool)
 
-	terminating_run(sparams, None, archive, None)
+	terminating_run(sparams, None, archive, None, nb_eval)
         
 
