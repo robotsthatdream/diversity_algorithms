@@ -58,6 +58,7 @@ def eval_with_functor(g):
 
 # declaration of params: RunParam(short_name (single letter for call from command line), default_value, doc)
 params={
+	"run_dir_name": RunParam("R", "", "name of the dir in which to put the dir with the run files"),
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
 	"pop_size": RunParam("p", 10, "population size (mu)"),
 	#"lambda": RunParam("l", 10, "Number of offspring generated per model"),
@@ -77,7 +78,7 @@ params={
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
 	"ccov": RunParam("c", 0.2, "coeff of the sample estimated C in the covariance matrix update"),
 	"cma_lambda": RunParam("l", 10, "number of samples to generate to update C"),
-	"sigma": RunParam("S", 1, "sigma coefficient for covariance matrix update"),
+	"sigma": RunParam("S", 1.0, "sigma coefficient for covariance matrix update"),
 	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	}
 
