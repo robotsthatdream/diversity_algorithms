@@ -73,11 +73,12 @@ def dump_exp_details(argv,run_name, params):
     f.write("\n++ Started at: "+sd+"\n")
     f.close()
 
-def dump_end_of_exp(run_name):
+def dump_end_of_exp(run_name, nb_eval):
     f=open(run_name+"/info.log","a")
     d=datetime.datetime.today()
     sd=d.strftime("<%Y_%m_%d-%H:%M:%S>")
 
+    f.write("== Nb eval: %d\n"%(nb_eval))
     f.write("-- Ended at: "+sd+"\n")
     f.close()
 

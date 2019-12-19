@@ -180,7 +180,7 @@ def preparing_run(eval_gym, params, with_scoop, deap=True):
 
     return sparams, pool
 
-def terminating_run(sparams, pop, archive, logbook):
+def terminating_run(sparams, pop, archive, logbook, nb_eval):
 
     if (pop is not None):
         dump_data(pop,sparams["nb_gen"],sparams, prefix="final_pop", attrs=["all"], force=True)
@@ -189,6 +189,6 @@ def terminating_run(sparams, pop, archive, logbook):
     if (archive is not None):
         dump_data(archive.get_content_as_list(),sparams["nb_gen"],sparams, prefix="final_archive", attrs=["bd"], force=True)
     
-    dump_end_of_exp(sparams["run_name"])
+    dump_end_of_exp(sparams["run_name"], nb_eval)
     
     print("The population, log, archives, etc have been dumped in: "+sparams["run_name"])

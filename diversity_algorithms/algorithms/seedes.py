@@ -92,7 +92,10 @@ def seedes(evaluate, params, pool):
     population+=toolbox.population(n=params["pop_size"])
     archive=None
 
+    nb_eval=0
+
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
+    nb_eval+=len(invalid_ind)
     fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fit = fit[0]
@@ -116,6 +119,7 @@ def seedes(evaluate, params, pool):
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in all_samples if not ind.fitness.valid]
+        nb_eval+=len(invalid_ind)
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fit = fit[0]
@@ -155,10 +159,16 @@ def seedes(evaluate, params, pool):
             else:
                 print(".", end='', flush=True)
 
-        dump_data(population, gen, params, prefix="population", attrs=["all"])
-        dump_data(population, gen, params, prefix="bd", complementary_name="population", attrs=["bd"])
-        dump_data(all_samples, gen, params, prefix="bd", complementary_name="all_samples", attrs=["bd"])
-        dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"])
+        if (("eval_budget" in params.keys()) and (params["eval_budget"]!=-1) and (nb_eval>=params["eval_budget"])): 
+            params["nb_gen"]=gen
+            terminates=True
+        else:
+            terminates=False
+
+        dump_data(population, gen, params, prefix="population", attrs=["all"], force=terminates)
+        dump_data(population, gen, params, prefix="bd", complementary_name="population", attrs=["bd"], force=terminates)
+        dump_data(all_samples, gen, params, prefix="bd", complementary_name="all_samples", attrs=["bd"], force=terminates)
+        dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"], force=terminates)
 
         generate_evolvability_samples(params, population, gen, toolbox)
         
@@ -172,10 +182,14 @@ def seedes(evaluate, params, pool):
         for ind in population:
             ind.evolvability_samples=None
 
+        if (terminates):
+            break
+
+
         population+=all_samples[-len(population):] # update the number of elements to add
 
             
-    return population, archive, logbook
+    return population, archive, logbook, nb_eval
 
   
 if (__name__=='__main__'):

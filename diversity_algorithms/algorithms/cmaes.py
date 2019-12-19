@@ -46,7 +46,7 @@ def cmaes(evaluate, params, pool):
         j=0
         archive=None
         gen=0
-        while (not es.stop()) and (i<params["nb_samples"]):
+        while (not es.stop()) and (i<params["eval_budget"]):
                 print(".", end="", flush=True)
                 j+=1
                 gen+=1
@@ -69,7 +69,7 @@ def cmaes(evaluate, params, pool):
                         for ind in pop:
                                 dm_fit.append(-np.linalg.norm(np.array(model_bd)-np.array(ind.bd)))
                         es.tell(solutions,dm_fit)
-                        print("Gen=%d, min dist_to_model=%f, max dist_to_model=%f, min fit=%f, max fit=%f (evals remaining=%d)"%(gen,min(dm_fit),max(dm_fit), min(fit), max(fit), params["nb_samples"]-i))
+                        print("Gen=%d, min dist_to_model=%f, max dist_to_model=%f, min fit=%f, max fit=%f (evals remaining=%d)"%(gen,min(dm_fit),max(dm_fit), min(fit), max(fit), params["eval_budget"]-i))
                         
                         
                 if (params["variant"] in ["CMAES_NS", "CMAES_NS_mu1"]):
@@ -89,7 +89,7 @@ def cmaes(evaluate, params, pool):
                         else:
                                 print("No model update, the archive still needs to grow to estimate novelty...")
 
-                        print("Gen=%d, min novelty=%f, max novelty=%f, min fit=%f, max fit=%f (evals remaining=%d)"%(gen,min(nov),max(nov), min(fit), max(fit), params["nb_samples"]-i))
+                        print("Gen=%d, min novelty=%f, max novelty=%f, min fit=%f, max fit=%f (evals remaining=%d)"%(gen,min(nov),max(nov), min(fit), max(fit), params["eval_budget"]-i))
 
                 dump_data(pop, gen, params, prefix="population", attrs=["all"])
                 dump_data(pop, gen, params, prefix="bd", complementary_name="population", attrs=["bd"])
@@ -101,6 +101,6 @@ def cmaes(evaluate, params, pool):
 
         params["nb_gen"]=gen # for the terminating_run function to know how many gens were run
         #es.result_pretty()
-        return es.result, archive
+        return es.result, archive, i
 
 
