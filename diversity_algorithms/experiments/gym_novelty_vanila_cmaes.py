@@ -32,6 +32,7 @@ from diversity_algorithms.experiments.exp_utils import *
 
 # declaration of params: RunParam(short_name (single letter for call from command line), default_value, doc)
 params={
+	"run_dir_name": RunParam("R", "", "name of the dir in which to put the dir with the run files"),
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
 	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),
 	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),

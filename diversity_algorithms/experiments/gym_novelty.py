@@ -47,6 +47,7 @@ if with_scoop:
 
 # declaration of params: RunParam(short_name (single letter for call from command line), default_value, doc)
 params={
+	"run_dir_name": RunParam("R", "", "name of the dir in which to put the dir with the run files"),
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
 	"pop_size": RunParam("p", 100, "population size (mu)"),
 	"lambda": RunParam("l", 2., "Number of offspring generated (coeff on pop_size)"),

@@ -13,8 +13,8 @@ if with_scoop:
 	from scoop import futures
 
 
-def generate_evolvability_samples_cmaes(es, evaluate, params, gen):
-    if (params["evolvability_nb_samples"]>0) and (params["dump_period_evolvability"]>0) and ((gen>0) and (gen % params["dump_period_evolvability"]==0)):
+def generate_evolvability_samples_cmaes(es, evaluate, params, gen, force=False):
+    if (force=True) or ((params["evolvability_nb_samples"]>0) and (params["dump_period_evolvability"]>0) and ((gen>0) and (gen % params["dump_period_evolvability"]==0))):
         print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(params["evolvability_nb_samples"]))
         print("sampling for evolvability... ",end='', flush=True)
         evolvability_samples=es.ask(number=params["evolvability_nb_samples"])
@@ -98,6 +98,9 @@ def cmaes(evaluate, params, pool):
                 generate_evolvability_samples_cmaes(es, evaluate, params, gen)
 
                 es.disp()
+
+        if (params["dump_period_evolvability"]>0):
+                generate_evolvability_samples_cmaes(es, evaluate, params, gen, force=True)
 
         params["nb_gen"]=gen # for the terminating_run function to know how many gens were run
         #es.result_pretty()
