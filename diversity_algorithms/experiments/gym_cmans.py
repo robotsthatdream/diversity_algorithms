@@ -66,7 +66,7 @@ params={
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
 	"ccov": RunParam("c", 0.2, "coeff of the sample estimated C in the covariance matrix update"),
 	"cma_lambda": RunParam("l", 10, "number of samples to generate to update C"),
-	"sigma": RunParam("S", 1.0, "sigma coefficient for covariance matrix update"),
+	"sigma": RunParam("S", 0.1, "sigma coefficient for covariance matrix update"),
 	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	}
 
