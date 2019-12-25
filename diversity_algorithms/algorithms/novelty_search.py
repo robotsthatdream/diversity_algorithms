@@ -22,7 +22,38 @@ from diversity_algorithms.analysis.data_utils import *
 
 from diversity_algorithms.algorithms.novelty_management import *
 
+import alphashape
+from shapely.geometry import Point, Polygon, LineString
+
 __all__=["novelty_ea"]
+
+import sys
+
+def dist_to_shape(pp, s):
+    p=Point(pp)
+    d=p.distance(s)
+    if (d==0.0):
+        d=-p.distance(s.exterior)
+    return d
+
+def dist_to_shapes(pp, ls):
+    if (not hasattr(ls, '__iter__')):
+        ls=[ls] 
+    p=Point(pp)
+    imin=-1
+    dmin=sys.float_info.max
+    for i in range(len(ls)):
+        d=p.distance(ls[i])
+        if (d<dmin):
+            imin=i
+            dmin=d
+    if (dmin==0.0):
+        d=-p.distance(ls[i].exterior)
+    else:
+        d=dmin
+    return d
+
+
 
 def build_toolbox_ns(evaluate,params,pool=None):
          
@@ -61,6 +92,8 @@ def build_toolbox_ns(evaluate,params,pool=None):
         toolbox.register("select", tools.selBest, fit_attr='novelty')
     elif (variant == "Fit"):
         toolbox.register("select", tools.selBest, fit_attr='fitness')
+    elif (variant == "DistExplArea"):
+        toolbox.register("select", tools.selBest, fit_attr='dist_to_explored_area')
     else:
         toolbox.register("select", tools.selNSGA2)
         
@@ -96,6 +129,8 @@ def novelty_ea(evaluate, params, pool=None):
     :param evolvability_nb_samples: the number of samples to generate from each individual in the population to estimate their evolvability (WARNING: it will significantly slow down a run and it is used only for statistical reasons
     """
     print("Novelty search algorithm")
+
+    alphas=params["alphas"] # parameter to compute the alpha shape, to estimate the distance to explored area
 
     variant=params["variant"]
     if ("+" in variant):
@@ -135,12 +170,17 @@ def novelty_ea(evaluate, params, pool=None):
         
     archive=updateNovelty(population,population,None,params)
 
+    alpha_shape = alphashape.alphashape(archive.all_bd, alphas)
+    isortednov=sorted(range(len(population)), key=lambda k: population[k].novelty, reverse=True)
+
     varian=params["variant"].replace(",","")
 
     
-    for ind in population:
-
-        if (emo):
+    for i,ind in enumerate(population):
+        ind.dist_to_explored_area=dist_to_shapes(ind.bd,alpha_shape)
+        ind.rank_novelty=isortednov.index(i)
+        ind.dist_to_parent=0
+        if (emo): 
             if (varian == "NS+Fit"):
                 ind.fitness.values = (ind.novelty, ind.fit)
             elif (varian == "NS+BDDistP"):
@@ -152,7 +192,9 @@ def novelty_ea(evaluate, params, pool=None):
                 ind.fitness.values=ind.fit
         else:
             ind.fitness.values=ind.fit
-    
+        # if it is not a multi-objective experiment, the select tool from DEAP 
+        # has been configured above to take the right attribute into account
+        # and the fitness.values is thus ignored
     gen=0    
 
     # Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
@@ -193,8 +235,17 @@ def novelty_ea(evaluate, params, pool=None):
 
         
         archive=updateNovelty(pq,offspring,archive,params)
+        alpha_shape = alphashape.alphashape(archive.all_bd, alphas)
+        isortednov=sorted(range(len(pq)), key=lambda k: pq[k].novelty, reverse=True)
 
-        for ind in pq:
+        for i,ind in enumerate(pq):
+            ind.dist_to_explored_area=dist_to_shapes(ind.bd,alpha_shape)
+            ind.rank_novelty=isortednov.index(i)
+            #print("Indiv #%d: novelty=%f rank=%d"%(i, ind.novelty, ind.rank_novelty))
+            if (ind.parent_bd is None):
+                ind.dist_to_parent=0
+            else:
+                ind.dist_to_parent=np.linalg.norm(np.array(ind.bd)-np.array(ind.parent_bd))
             if (emo):
                 if (varian == "NS+Fit"):
                     ind.fitness.values = (ind.novelty, ind.fit)
@@ -243,7 +294,7 @@ def novelty_ea(evaluate, params, pool=None):
         else:
             terminates=False
 
-        dump_data(population, gen, params, prefix="population", attrs=["all"], force=terminates)
+        dump_data(population, gen, params, prefix="population", attrs=["all", "dist_to_explored_area", "dist_to_parent", "rank_novelty"], force=terminates)
         dump_data(population, gen, params, prefix="bd", complementary_name="population", attrs=["bd"], force=terminates)
         dump_data(offspring, gen, params, prefix="bd", complementary_name="offspring", attrs=["bd"], force=terminates)
         dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"], force=terminates)

@@ -23,12 +23,10 @@ import sys
 # Yes, this is ugly. This is DEAP's fault.
 # See https://github.com/DEAP/deap/issues/57
 
+
 from diversity_algorithms.algorithms.novelty_search import set_creator
-set_creator(creator)
 
 
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax)
 #creator.create("Strategy", list, typecode="d")
 
 from diversity_algorithms.algorithms.novelty_search import novelty_ea
@@ -69,6 +67,7 @@ params={
 	"lambda_nov": RunParam("", 6, "number of indiv added to the archive at each gen"),
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
 	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
+	"alphas": RunParam("", 1.1, "alpha for the computation of alpha shapes, to build explored areas and compute distance to them"),
 	}
 
 analyze_params(params, sys.argv)
@@ -83,6 +82,12 @@ controller_params = {"controller_type":SimpleNeuralController,"controller_params
 # Get environment
 eval_func = create_functor(params, controller_params)
 
+nbobj=params["variant"].get_value().count("+")+1
+creator.create("FitnessMax", base.Fitness, weights=(1.0,)*nbobj)
+creator.create("Individual", list, typecode="d", fitness=creator.FitnessMax)
+set_creator(creator)
+
+
 # DO NOT pass the functor directly to futures.map -- this creates memory leaks
 # Wrapper that evals with the local functor
 def eval_with_functor(g):
@@ -93,6 +98,7 @@ if(__name__=='__main__'):
 	# Get env and controller
 
 	sparams, pool=preparing_run(eval_func, params, with_scoop)
+
 	
 
 	pop, archive, logbook, nb_eval = novelty_ea(eval_with_functor, sparams, pool)
