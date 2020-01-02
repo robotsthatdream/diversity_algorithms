@@ -147,7 +147,8 @@ def preparing_run(eval_gym, params, with_scoop, deap=True):
     sparams["evolvability_nb_samples"]=evolvability_nb_samples
     sparams["min_bd"]=min_bd # not used by NS. It is just to keep track of it in the saved param file
     sparams["max_bd"]=max_bd # not used by NS. It is just to keep track of it in the saved param file
-    
+    sparams["nb_bin"]=nb_bin_bd # not used by NS. It is just to keep track of it in the saved param file
+
     if deap:
         # We use a different window size to compute statistics in order to have the same number of points for population and offspring statistics
         window_population=nbs/sparams["pop_size"]

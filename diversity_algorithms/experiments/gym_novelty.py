@@ -67,7 +67,7 @@ params={
 	"lambda_nov": RunParam("", 6, "number of indiv added to the archive at each gen"),
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
 	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
-	"alphas": RunParam("", 1.1, "alpha for the computation of alpha shapes, to build explored areas and compute distance to them"),
+	"alphas": RunParam("A", 1.1, "alpha for the computation of alpha shapes, to build explored areas and compute distance to them"),
 	}
 
 analyze_params(params, sys.argv)
