@@ -63,7 +63,7 @@ def analyze_params(params, argv):
 
     optstr="hv"+"".join([params[k].short_name+":" for k in params.keys()])
     optargs=[k+"=" for k in params.keys()]
-    helpstr="-h -v ".join(["-"+params[k].short_name+" <"+k+">" for k in params.keys()])
+    helpstr="-h -v "+" ".join(["-"+params[k].short_name+" <"+k+">" for k in params.keys()])
 
     try:
         opts, args = getopt.getopt(argv[1:],optstr, optargs)
