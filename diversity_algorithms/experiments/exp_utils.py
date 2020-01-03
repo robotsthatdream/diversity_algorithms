@@ -90,10 +90,17 @@ def analyze_params(params, argv):
 
 
 def create_functor(params, controller_params):
-    if params["env_name"].get_value() not in registered_environments:
-        print("ERROR Unknown environment %s" % params["env_name"].get_value())
+    rp=RunParam("",0,"")
+    if (type(rp) == type(params["env_name"])):
+        env_name=params["env_name"].get_value()
+    else:
+        env_name=str(params["env_name"])
+
+
+    if env_name not in registered_environments:
+        print("ERROR Unknown environment %s" % (env_name))
         sys.exit(1)
-    environment = registered_environments[params["env_name"].get_value()]
+    environment = registered_environments[env_name]
 
     evaluator_class = environment["eval"]
     evaluator_params = environment["eval_params"]

@@ -14,6 +14,8 @@ def set_creator(cr):
     global creator
     creator = cr
 
+import pickle
+
 from deap import tools, base, algorithms
 
 from diversity_algorithms.algorithms.utils import *
@@ -56,7 +58,9 @@ def build_toolbox_ns(evaluate,params,pool=None):
         raise RuntimeError("Unknown genotype type %s" % geno_type)
 
     #Common elements - selection and evaluation
-    variant=params["variant"].replace(",","")
+    
+    v=str(params["variant"])
+    variant=v.replace(",","")
     if (variant == "NS"): 
         toolbox.register("select", tools.selBest, fit_attr='novelty')
     elif (variant == "Fit"):
@@ -69,6 +73,7 @@ def build_toolbox_ns(evaluate,params,pool=None):
     # Parallelism
     if(pool):
         toolbox.register("map", pool.map)
+
     
     return toolbox
 
