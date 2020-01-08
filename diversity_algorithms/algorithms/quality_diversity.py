@@ -22,8 +22,21 @@ from diversity_algorithms.analysis.population_analysis import *
 from diversity_algorithms.analysis.data_utils import *
 
 
-def replace_if_better(oldind,newind,fit_index=0):
+def criterion_fitness(ind):
+	return ind.fitness.values[0]
+
+def criterion_novelty(ind):
+	return ind.novelty
+
+
+def replace_if_better(oldind,newind,criterion):
 	return oldind.fitness.values[fit_index] < newind.fitness.values[fit_index]
+
+def replace_if_fitter(oldind,newind):
+	return replace_if_better(oldind, newind, criterion=criterion_fitness)
+
+def replace_if_newer(oldind,newind):
+	return replace_if_better(oldind, newind, criterion=criterion_novelty)
 
 def replace_always(oldind,newind):
 	return True
@@ -477,7 +490,7 @@ def QD(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
 	elif(params["REPLACE_STRATEGY"]=="always"):
 		replaceStrat = replace_always
 	elif(params["REPLACE_STRATEGY"]=="fitness"):
-		replaceStrat = replace_if_better
+		replaceStrat = replace_if_fitter
 	elif(params["REPLACE_STRATEGY"]=="random"):
 		replaceStrat = replace_random
 	else:
