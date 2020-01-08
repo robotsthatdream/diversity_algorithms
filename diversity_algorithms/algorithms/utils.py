@@ -5,6 +5,7 @@ import subprocess
 import dill
 import pickle
 import sys
+import uuid
 
 from diversity_algorithms.analysis.population_analysis import *
 
@@ -28,6 +29,12 @@ class Indiv:
            return self.g[i]
        def __setitem__(self,i,v):
            self.g[i]=v
+
+
+def generate_uuid(): # Generate an unique ID with the Python UUID module
+    u = uuid.uuid4()
+    return u.hex
+
 
 def generate_exp_name(name=""):
     d=datetime.datetime.today()
@@ -132,7 +139,7 @@ def dump_data(data_list, gen, params, prefix="population", complementary_name=""
 				ind.dump_to_dict(out_dict,i, attrs)
 			except AttributeError:
 				if ("all" in attrs):
-					myattrs=attrs+["ind", "fit", "novelty", "bd"]
+					myattrs=attrs+["ind", "fit", "novelty", "bd", "id", "parent_id"]
 				else:
 					myattrs=attrs
 				if ("ind" in myattrs):

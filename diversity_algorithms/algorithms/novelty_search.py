@@ -134,6 +134,8 @@ def novelty_ea(evaluate, params, pool=None):
         ind.fit = fit[0] # fit is an attribute just used to store the fitness value
         ind.parent_bd=None
         ind.bd=listify(fit[1])
+        ind.id = generate_uuid()
+        ind.parent_id = None
 
     for ind in population:
         ind.am_parent=0
@@ -187,6 +189,8 @@ def novelty_ea(evaluate, params, pool=None):
             ind.fit = fit[0]
             ind.fitness.values = fit[0]
             ind.parent_bd=ind.bd
+            ind.parent_id=ind.id
+            ind.id = generate_uuid()
             ind.bd=listify(fit[1])
 
         for ind in population:
