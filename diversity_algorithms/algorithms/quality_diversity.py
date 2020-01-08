@@ -21,6 +21,8 @@ from diversity_algorithms.algorithms.utils import *
 from diversity_algorithms.analysis.population_analysis import *
 from diversity_algorithms.analysis.data_utils import *
 
+from diversity_algorthms.environments import registered_environments # To get grid dimensions
+
 
 def criterion_fitness(ind):
 	return ind.fitness.values[0]
@@ -46,6 +48,14 @@ def replace_never(oldind,newind):
 
 def replace_random(oldind, newind, p=0.5):
 	return (np.random.uniform() < p)
+
+
+replace_strategies = {"never": replace_never,
+	"always": replace_always,
+	"random": replace_random,
+	"fitness": replace_if_fitter, # WARNING: Only makes sense with a fitness/quality, we don't have that now
+	"novelty": replace_if_newer}
+
 
 class StructuredGrid:
 	""" Structured grid for MAP-Elite like stuff
@@ -220,44 +230,98 @@ class UnstructuredArchive:
 
 
 
+
+def build_toolbox_qd(evaluate,params,pool=None):
+         
+    toolbox = base.Toolbox()
+
+    if(params["geno_type"] == "realarray"):
+        print("** Using fixed structure networks (MLP) parameterized by a real array **")
+        # With fixed NN
+        # -------------
+        toolbox.register("attr_float", lambda : random.uniform(params["min"], params["max"]))
+        
+        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=params["ind_size"])
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        #toolbox.register("mate", tools.cxBlend, alpha=params["alpha"])
+    
+        # Polynomial mutation with eta=15, and p=0.1 as for Leni
+        toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["eta_m"], indpb=params["indpb"], low=params["min"], up=params["max"])
+    
+    elif(params["geno_type"] == "dnn"):
+        print("** Using dymamic structure networks (DNN) **")
+        # With DNN (dynamic structure networks)
+        #---------
+        toolbox.register("individual", initDNN, creator.Individual, in_size=params["geno_n_in"],out_size=params["geno_n_out"])
+
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        #toolbox.register("mate", mateDNNDummy, alpha=params["alpha"])
+    
+        # Polynomial mutation with eta=15, and p=0.1 as for Leni
+        toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["dnn_mut_pb_wb"], mutation_eta=params["dnn_mut_eta_wb"], mutation_rate_add_conn=params["dnn_mut_pb_add_conn"], mutation_rate_del_conn=params["dnn_mut_pb_del_conn"], mutation_rate_add_node=params["dnn_mut_pb_add_node"], mutation_rate_del_node=params["dnn_mut_pb_del_node"])
+    else:
+        raise RuntimeError("Unknown genotype type %s" % geno_type)
+
+    #Common elements - selection and evaluation
+    
+    v=str(params["variant"])
+    variant=v.replace(",","")
+    if (variant == "NS"): 
+        toolbox.register("select", tools.selBest, fit_attr='novelty')
+    elif (variant == "Fit"):
+        toolbox.register("select", tools.selBest, fit_attr='fitness')
+    else:
+        toolbox.register("select", tools.selNSGA2)
+        
+    toolbox.register("evaluate", evaluate)
+    
+    # Parallelism
+    if(pool):
+        toolbox.register("map", pool.map)
+
+    
+    return toolbox
+
+
+
 ## DEAP compatible algorithm
-def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_type=StructuredGrid, archive_kwargs={"bins_per_dim":50, "dims_ranges":([0,600],[0,600])}, replace_strategy=replace_never, sample_strategy="novelty", stats_offspring=None, halloffame=None, dump_period_bd=1, dump_period_pop=10, evolvability_period=50, evolvability_nb_samples=0, verbose=__debug__, run_name="runXXX"):
+def QDEa(evaluate, params, pool=None):
 	"""QD algorithm
  
 	QD algorithm. Parameters:
-	:param population: the population to start from
-	:param toolbox: the DEAP toolbox to use to generate new individuals and evaluate them
-	:param mu: the number of parent individuals to keep from one generation to another
-	:param lambda_: the number of offspring to generate (lambda_ needs to be greater than mu)
+	:param pop_size: the number of offspring to generate
 	:param cxpb: the recombination rate
 	:param mutpb: the mutation rate
 	:param ngen: the number of generation to compute
 	:param k_nov: the number of neighbors to take into account while computing novelty
-	:param add_strategy: the archive update strategy (can be "random" or "novel")
-	:param stats: the statistic to use (on the population, i.e. survivors from parent+offspring)
-	:param stats_offspring: the statistic to use (on the set of offspring)
-	:param halloffame: the halloffame
+	:param archive_type: the archive type, can be "unstructured" or "grid"
+	:param grid_n_bin: the number of bins per dimension if using a grid
+	:param unstructured_neighborhood_radius: the radius of the ball where neighbors will be searched if using an unstructured archive
+	:param sample_strategy: the archive sampling process (can be "random" or "novelty")
+	:param add_strategy: the archive update strategy (can be "always", "never", "random" or "novelty")
+	:param stats: the statistic to use on the population
 	:param dump_period_bd: the period for dumping behavior descriptors
-	:param dump_period_pop: the period for dumping the current population
+	:param dump_period_population: the period for dumping the current population (generated offspring)
+	:param dump_period_archive: the period for dumping the current archive
 	:param evolvability_period: period of the evolvability computation
 	:param evolvability_nb_samples: the number of samples to generate from each individual in the population to estimate their evolvability (WARNING: it will significantly slow down a run and it is used only for statistical reasons
 	"""
-		
-	if(halloffame!=None):
-		print("WARNING: the hall of fame argument is ignored in the Novelty Search Algorithm")
-	stats=None # No population - stats on offspring only
+	toolbox=build_toolbox_ns(evaluate,params,pool)
+
+	population = toolbox.population(n=params["pop_size"])
 		
 	#print("	 lambda=%d, mu=%d, cxpb=%.2f, mutpb=%.2f, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,cxpb,mutpb,ngen,k,lambdaNov)) #TODO replace
+
+	nb_eval=0
 
 	logbook = tools.Logbook()
 	logbook.header = ['gen', 'nevals']
 	if (stats is not None):
 		logbook.header += stats.fields
-	if (stats_offspring is not None):
-		logbook.header += stats_offspring.fields
 
 	# Evaluate the individuals with an invalid fitness
 	invalid_ind = [ind for ind in population if not ind.fitness.valid]
+	nb_eval+=len(invalid_ind)
 	fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
 	# fit is a list of fitness (that is also a list) and behavior descriptor
 
@@ -265,90 +329,81 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 		ind.fitness.values = fit[0]
 		ind.parent_bd=None
 		ind.bd=listify(fit[1])
+		ind.id = generate_uuid()
+		ind.parent_id = None
 
 	for ind in population:
 		ind.am_parent=0
 	
 
-	archive_args = archive_kwargs
-	archive_args["k_nov_knn"] = k_nov
-	archive = archive_type(population,**archive_args)
+
+
+	if((params["archive_type"] == "unstructured") or (params["archive_type"] == "archive")):
+		archive = UnstructuredArchive(population, r_ball_replace=params["unstructured_neighborhood_radius"], replace_strategy=replace_strategies[params["replace_strategy"]], k_nov_knn=params["k_nov"])
+	elif(params["archive_type"] == "grid"):
+		#Fetch behavior space dimensions
+		gridinfo = registered_environments[params["env_name"]]["grid_features"]
+		dim_ranges = zip(gridinfo["min_x"],gridinfo["max_x"])
+		if(params["grid_n_bin"] <= 0):
+			params["grid_n_bin"] = gridinfo["nb_bin"] # If no specific discretization is given, take the environment default
+		archive = StructuredGrid(population, bins_per_dim=params["grid_n_bin"], dims_ranges=dim_ranges, replace_strategy=replace_strategies[params["replace_strategy"]], compute_novelty=True, k_nov_knn=params["k_nov"])
+
+
+
 
 
 	gen=0	
 
 	#Resample "initial population" as the archive content (maybe not all were added)
 	population = archive.get_content_as_list()
+	
+	generate_evolvability_samples(params, population, gen, toolbox)
 
-	# Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
-	if (evolvability_nb_samples>0) and (evolvability_period>0):
-		print("WARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(evolvability_nb_samples))
-		print("sampling for evolvability: ",end='', flush=True)
-		ig=0
-		for ind in population:
-			print(".", end='', flush=True)
-			ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
-			dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
-			for inde in ind.evolvability_samples:
-				dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")
-			dump_bd_evol.close()
-			ig+=1
-		print("")
 
 
 	record = stats.compile(population) if stats is not None else {}
-	record_offspring = stats_offspring.compile(population) if stats_offspring is not None else {}
-	logbook.record(gen=0, nevals=len(invalid_ind), **record, **record_offspring)
+	logbook.record(gen=0, nevals=len(invalid_ind), **record)
 	if verbose:
 		print(logbook.stream)
 	
-	if dump_period_bd:
-		dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
-		for ind in population:
-			dump_bd.write(" ".join(map(str,ind.bd))+"\n")
-		dump_bd.close()
-		dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
-		for ind in population:
-			dump_bd.write(" ".join(map(str,ind.bd))+"\n")
-		dump_bd.close()
-	
-	if dump_period_pop:
-		dump_pop(population, 0, run_name) # Dump initial pop
-
 	for ind in population:
-		ind.evolvability_samples=None # To avoid memory to inflate too much..
-	
-	
+		ind.evolvability_samples=None # To prevent memory from inflating too much..
 	
 	# Begin the generational process
 	for gen in range(1, ngen + 1):
 		# Sample from the archive
-		parents = archive.sample_archive(n_parents, strategy=sample_strategy)
+		parents = archive.sample_archive(params["pop_size"], strategy=params["sample_strategy"])
 		
-		if(len(parents)) < n_parents:
+		if(len(parents)) < params["pop_size"]:
 			print("WARNING: Not enough individuals in archive to sample %d parents; will complete with %d random individuals" % (n_parents, n_parents-len(parents)))
-			extra_random_indivs = toolbox.population(n=(n_parents-len(parents)))
+			extra_random_indivs = toolbox.population(n=(params["pop_size"]-len(parents)))
+			nb_eval+=len(extra_random_indivs)
 			extra_fitnesses = toolbox.map(toolbox.evaluate, extra_random_indivs)
 			for ind, fit in zip(extra_random_indivs, extra_fitnesses):
 				ind.fitness.values = fit[0] 
 				ind.parent_bd=None
 				ind.bd=listify(fit[1])
+				ind.id = generate_uuid()
+				ind.parent_id = None
 				ind.am_parent=0
 			parents += extra_random_indivs
 		
 		# Vary the population
-		offspring = algorithms.varOr(parents, toolbox, n_parents, cxpb, mutpb)
+		offspring = algorithms.varOr(parents, toolbox, params["pop_size"], params["cxpb"], params["mutpb")
 
 		# Evaluate the individuals with an invalid fitness
 		invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+		nb_eval+=len(invalid_ind)
 		fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
 		for ind, fit in zip(invalid_ind, fitnesses):
 			ind.fitness.values = fit[0] 
 			ind.parent_bd=ind.bd
 			ind.bd=listify(fit[1])
+			ind.parent_id = ind.id
+			ind.id = generate_uuid()
 			ind.am_parent=0
 
-		for ind in population:
+		for ind in parents:
 			ind.am_parent=1
 		for ind in offspring:
 			ind.am_parent=0
@@ -362,40 +417,26 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 				ind.novelty = archive.get_nov(ind.bd, in_archive=False)
 		
 
-		if(dump_period_bd and(gen % dump_period_bd == 0)): # Dump offspring behavior descriptors
-			dump_bd=open(run_name+"/bd_%04d.log"%gen,"w")
-			for ind in offspring:
-				dump_bd.write(" ".join(map(str,ind.bd))+"\n")
-			dump_bd.close()
 
 
 		print("Gen %d - %d individuals added to the archive"%(gen, n_added))
 
-		
-		if(dump_period_pop and(gen % dump_period_pop == 0)): # Dump offspring
-			dump_pop(offspring, gen,run_name,"offspring")
-			dump_archive_qd(archive, gen,run_name)
-			dump_logbook(logbook, gen,run_name)
 
+		if (("eval_budget" in params.keys()) and (params["eval_budget"]!=-1) and (nb_eval>=params["eval_budget"])): 
+			params["nb_gen"]=gen
+			terminates=True
+		else:
+			terminates=False
 
-		
-		# Do we look at the evolvability of individuals (WARNING: it will make runs much longer !)
-		if (evolvability_nb_samples>0) and (evolvability_period>0) and (gen % evolvability_period == 0):
-			print("Sampling for evolvability: ",end="", flush=True)
-			ig=0
-			for ind in offspring:
-				print(".", end='', flush=True)
-				ind.evolvability_samples=sample_from_pop([ind],toolbox,evolvability_nb_samples,cxpb,mutpb)
-				dump_bd_evol=open(run_name+"/bd_evol_indiv%04d_gen%04d.log"%(ig,gen),"w")
-				for inde in ind.evolvability_samples:
-					dump_bd_evol.write(" ".join(map(str,inde.bd))+"\n")
-				dump_bd_evol.close()
-				ig+=1
-			print("")
+		dump_data(offspring, gen, params, prefix="population", attrs=["all"], force=terminates)
+		dump_data(offspring, gen, params, prefix="bd", complementary_name="population", attrs=["bd"], force=terminates)
+		dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"], force=terminates)
+
+		generate_evolvability_samples(params, offspring, gen, toolbox)
 		
 		# Update the statistics with the new population
-		record_offspring = stats_offspring.compile(offspring) if stats_offspring is not None else {}
-		logbook.record(gen=gen, nevals=len(invalid_ind), **record_offspring)
+		record = stats.compile(offspring) if stats is not None else {}
+		logbook.record(gen=gen, nevals=len(invalid_ind), **record)
 		if verbose:
 			print(logbook.stream)
 
@@ -403,104 +444,10 @@ def QDEa(population, toolbox, n_parents, cxpb, mutpb, ngen, k_nov=15, archive_ty
 			ind.evolvability_samples=None
 
 			
-	return offspring, archive, logbook
+	return archive, logbook, nb_eval
 
 
 
-
-def QD(evaluate,myparams,pool=None, run_name="runXXX", geno_type="realarray"):
-	"""Novelty-based Mu plus lambda ES."""
-
-	params={"IND_SIZE":1, 
-			"CXPB":0, # crossover probility
-			"MUTPB":0.5, # probability to mutate an individual
-			"NGEN":1000, # number of generations
-			"STATS_OFFSPRING":None, # Statistics on offspring
-			"MIN": 0, # Min of genotype values
-			"MAX": 1, # Max of genotype values
-			"LAMBDA": 100, # Number of offspring generated at each generation
-			"ALPHA": 0.1, # Alpha parameter of Blend crossover
-			"ETA_M": 15.0, # Eta parameter for polynomial mutation
-			"INDPB": 0.1, # probability to mutate a specific genotype parameter given that the individual is mutated. (The unconditional probability of a parameter being mutated is INDPB*MUTPB
-			"K":15, # Number of neighbors to consider in the archive for novelty computation
-			"ARCHIVE_TYPE":"grid",
-			"ARCHIVE_ARGS":{"bins_per_dim":50, "dims_ranges":([0,600],[0,600])},
-			"REPLACE_STRATEGY":"never",
-			"SAMPLE_STRAGEGY":"novelty",
-			"EVOLVABILITY_NB_SAMPLES":0, # How many children to generate to estimate evolvability
-			"EVOLVABILITY_PERIOD": 100, # Period to estimate evolvability
-			"DUMP_PERIOD_POP": 10, # Period to dump population
-			"DUMP_PERIOD_BD": 1 # Period to dump behavior descriptors
-			}
-	
-	
-	for key in myparams.keys():
-		params[key]=myparams[key]
-
-		 
-	toolbox = base.Toolbox()
-
-	if(geno_type == "realarray"):
-		print("** Unsing fixed structure networks (MLP) parameterized by a real array **")
-		# With fixed NN
-		# -------------
-		toolbox.register("attr_float", lambda : random.uniform(params["MIN"], params["MAX"]))
-		
-		toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=params["IND_SIZE"])
-		toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-		toolbox.register("mate", tools.cxBlend, alpha=params["ALPHA"])
-	
-		# Polynomial mutation with eta=15, and p=0.1 as for Leni
-		toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["ETA_M"], indpb=params["INDPB"], low=params["MIN"], up=params["MAX"])
-	
-	elif(geno_type == "dnn"):
-		print("** Unsing dymamic structure networks (DNN) **")
-		# With DNN (dynamic structure networks)
-		#---------
-		toolbox.register("individual", initDNN, creator.Individual, in_size=params["GENO_N_IN"],out_size=params["GENO_N_OUT"])
-
-		toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-		toolbox.register("mate", mateDNNDummy, alpha=params["ALPHA"])
-	
-		# Polynomial mutation with eta=15, and p=0.1 as for Leni
-		toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["DNN_MUT_PB_WB"], mutation_eta=params["DNN_MUT_ETA_WB"], mutation_rate_add_conn=params["DNN_MUT_PB_ADD_CONN"], mutation_rate_del_conn=params["DNN_MUT_PB_DEL_CONN"], mutation_rate_add_node=params["DNN_MUT_PB_ADD_NODE"], mutation_rate_del_node=params["DNN_MUT_PB_DEL_NODE"])
-	else:
-		raise RuntimeError("Unknown genotype type %s" % geno_type)
-	#Common elements - selection and evaluation
-	#toolbox.register("select", tools.selBest, fit_attr='novelty') # Useless in QD, selection is handled in archive code
-	toolbox.register("evaluate", evaluate)
-	
-	# Parallelism
-	if(pool):
-		toolbox.register("map", pool.map)
-	
-
-	pop = toolbox.population(n=params["LAMBDA"])
-	
-	if(params["ARCHIVE_TYPE"] == "grid"):
-		archiveType = StructuredGrid
-	elif(params["ARCHIVE_TYPE"] == "archive"):
-		archiveType = UnstructuredArchive
-	else:
-		print("ERROR: Unknown archive type %s" % str(params["ARCHIVE_TYPE"]))
-		sys.exit(1)
-	
-	if(params["REPLACE_STRATEGY"]=="never"):
-		replaceStrat = replace_never
-	elif(params["REPLACE_STRATEGY"]=="always"):
-		replaceStrat = replace_always
-	elif(params["REPLACE_STRATEGY"]=="fitness"):
-		replaceStrat = replace_if_fitter
-	elif(params["REPLACE_STRATEGY"]=="random"):
-		replaceStrat = replace_random
-	else:
-		print("ERROR: Unknown replacement strategy %s" % str(params["REPLACE_STRATEGY"]))
-		sys.exit(1)
-		
-	rpop, archive, logbook = QDEa(pop, toolbox, n_parents=params["LAMBDA"], cxpb=params["CXPB"], mutpb=params["MUTPB"], ngen=params["NGEN"], k_nov=params["K"], archive_type=archiveType, archive_kwargs=params["ARCHIVE_ARGS"], replace_strategy=replaceStrat, sample_strategy=params["SAMPLE_STRAGEGY"], stats_offspring=params["STATS_OFFSPRING"], halloffame=None, evolvability_nb_samples=params["EVOLVABILITY_NB_SAMPLES"], evolvability_period=params["EVOLVABILITY_PERIOD"], dump_period_bd=params["DUMP_PERIOD_BD"], dump_period_pop=params["DUMP_PERIOD_POP"], verbose=False, run_name=run_name)
-		
-	return rpop, archive, logbook
-  
 if (__name__=='__main__'):
 	print("Test of the QD")
 
