@@ -65,7 +65,7 @@ params={
 	"sample_strategy": RunParam("s", "random", "strategy for sampling the archive (random or novelty)"),
 	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
-	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),
+	"dump_period_evolvability": RunParam("V", 0, "period of evolvability estimation"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
 	"dump_period_population": RunParam("d", 1, "period of population dump"),
 	"dump_period_archive": RunParam("D", 1, "period of archive dump"),
