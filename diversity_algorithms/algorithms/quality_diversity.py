@@ -220,7 +220,9 @@ class UnstructuredArchive:
 				return False
 
 	def sample_archive(self, n, strategy="random"):
-		if(strategy=="random"):
+		if(n >= self.size()): # If there are not enough (or just enough) indivs in the archive, return them all
+			return list(self.archive) #return a copy
+		elif(strategy=="random"):
 			indices = np.random.choice(self.size(), n, replace=False)
 		elif(strategy=="novelty"):
 			novelties = [ind.novelty for ind in self.archive]
