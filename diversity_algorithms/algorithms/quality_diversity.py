@@ -287,24 +287,6 @@ def build_toolbox_qd(evaluate,params,pool=None):
 ## DEAP compatible algorithm
 def QDEa(evaluate, params, pool=None):
 	"""QD algorithm
- 
-	QD algorithm. Parameters:
-	:param pop_size: the number of offspring to generate
-	:param cxpb: the recombination rate
-	:param mutpb: the mutation rate
-	:param ngen: the number of generation to compute
-	:param k_nov: the number of neighbors to take into account while computing novelty
-	:param archive_type: the archive type, can be "unstructured" or "grid"
-	:param grid_n_bin: the number of bins per dimension if using a grid
-	:param unstructured_neighborhood_radius: the radius of the ball where neighbors will be searched if using an unstructured archive
-	:param sample_strategy: the archive sampling process (can be "random" or "novelty")
-	:param add_strategy: the archive update strategy (can be "always", "never", "random" or "novelty")
-	:param stats: the statistic to use on the population
-	:param dump_period_bd: the period for dumping behavior descriptors
-	:param dump_period_population: the period for dumping the current population (generated offspring)
-	:param dump_period_archive: the period for dumping the current archive
-	:param evolvability_period: period of the evolvability computation
-	:param evolvability_nb_samples: the number of samples to generate from each individual in the population to estimate their evolvability (WARNING: it will significantly slow down a run and it is used only for statistical reasons
 	"""
 	toolbox=build_toolbox_ns(evaluate,params,pool)
 
@@ -339,6 +321,13 @@ def QDEa(evaluate, params, pool=None):
 
 
 	if((params["archive_type"] == "unstructured") or (params["archive_type"] == "archive")):
+		# If no ball size is given, take a diameter of average size of a dimension / nb_bin
+		if(params["unstructured_neighborhood_radius"] <= 0):
+			#Fetch behavior space dimensions
+			gridinfo = registered_environments[params["env_name"]]["grid_features"]
+			avg_dim_sizes = np.mean(np.array(gridinfo["max_x"]) - np.array(gridinfo["min_x"]))
+			params["unstructured_neighborhood_radius"] = avg_dim_sizes / (2*gridinfo["nb_bin"])
+			print("Unstructured archive replace radius autoset to %f" % params["unstructured_neighborhood_radius"])
 		archive = UnstructuredArchive(population, r_ball_replace=params["unstructured_neighborhood_radius"], replace_strategy=replace_strategies[params["replace_strategy"]], k_nov_knn=params["k_nov"])
 	elif(params["archive_type"] == "grid"):
 		#Fetch behavior space dimensions
@@ -346,15 +335,16 @@ def QDEa(evaluate, params, pool=None):
 		dim_ranges = zip(gridinfo["min_x"],gridinfo["max_x"])
 		if(params["grid_n_bin"] <= 0):
 			params["grid_n_bin"] = gridinfo["nb_bin"] # If no specific discretization is given, take the environment default
+			print("Archive grid bin number autoset to %d" % params["grid_n_bin"])
 		archive = StructuredGrid(population, bins_per_dim=params["grid_n_bin"], dims_ranges=dim_ranges, replace_strategy=replace_strategies[params["replace_strategy"]], compute_novelty=True, k_nov_knn=params["k_nov"])
 
 
 
 
 
-	gen=0	
+	gen=0
 
-	#Resample "initial population" as the archive content (maybe not all were added)
+	#Redefine the "initial population" as the archive content (maybe not all were added)
 	population = archive.get_content_as_list()
 	
 	generate_evolvability_samples(params, population, gen, toolbox)

@@ -51,29 +51,39 @@ with_scoop=True
 if with_scoop:
 	from scoop import futures
 
+	"""QD algorithm
+ 
+	QD algorithm. Parameters:
+	:param archive_type: the archive type, can be "unstructured" or "grid"
+	:param grid_n_bin: the number of bins per dimension if using a grid
+	:param unstructured_neighborhood_radius: the radius of the ball where neighbors will be searched if using an unstructured archive
+	:param sample_strategy: the archive sampling process (can be "random" or "novelty")
+	:param add_strategy: the archive update strategy (can be "always", "never", "random" or "novelty")
+	"""
 
 # declaration of params: RunParam(short_name (single letter for call from command line), default_value, doc)
 params={
 	"run_dir_name": RunParam("R", "", "name of the dir in which to put the dir with the run files"),
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
-	"pop_size": RunParam("p", 100, "population size (mu)"),
-	"lambda": RunParam("l", 2., "Number of offspring generated (coeff on pop_size)"),
+	"pop_size": RunParam("p", 100, "population size (number of offspring generated)"),
+	"archive_type" : RunParam("a", "grid", "Archive type (grid or unstructured)"),
+	"grid_n_bin" : RunParam("", -1, "Number of bins per dimension for grid archive (default auto = environment default)"),
+	"unstructured_neighborhood_radius" : RunParam("", -1., "Replace radius for unstructured archive (default = half default grid size)"),
+	"replace_strategy": RunParam("s", "random", "strategy for archive replacement (always, never, random, fitness or novelty)"),
+	"sample_strategy": RunParam("s", "random", "strategy for sampling the archive (random or novelty)"),
 	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
 	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
 	"dump_period_population": RunParam("d", 1, "period of population dump"),
 	"dump_period_archive": RunParam("D", 1, "period of archive dump"),
-	"variant": RunParam("a", "NS", "variant of the Novelty Search algorithm"),
-	"cxpb": RunParam("", 0, "cross-over rate"), # No crossover
+	"cxpb": RunParam("", 0., "cross-over rate"), # No crossover
 	"mutpb": RunParam("",1., "mutation rate"),  # All offspring are mutated...
 	"indpb": RunParam("",0.1, "indiv probability"), # ...but only 10% of parameters are mutated
 	"eta_m": RunParam("", 15.0, "Eta parameter for polynomial mutation"),
 	"min": RunParam("", -5., "Min value of the genotype"), # WARNING, some variants do not use it at all. -5 seems reasonable for NN weights
 	"max": RunParam("", 5., "Min value of the genotype"), # WARNING, some variants do not use it at all. 5 seems reasonable for NN weights
-	"k": RunParam("", 15, "Number of neighbors to take into account for novelty computation"),
-	"add_strategy": RunParam("s", "random", "strategy for archive inclusion (random or novel)"),
-	"lambda_nov": RunParam("", 6, "number of indiv added to the archive at each gen"),
+	"k_nov": RunParam("", 15, "Number of neighbors to take into account for novelty computation"),
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
 	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	}
