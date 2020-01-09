@@ -8,7 +8,7 @@ import os, sys
 import array
 
 
-from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
+#from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
 
 creator = None
 def set_creator(cr):
@@ -21,7 +21,7 @@ from diversity_algorithms.algorithms.utils import *
 from diversity_algorithms.analysis.population_analysis import *
 from diversity_algorithms.analysis.data_utils import *
 
-from diversity_algorthms.environments import registered_environments # To get grid dimensions
+from diversity_algorithms.environments import registered_environments # To get grid dimensions
 
 
 def criterion_fitness(ind):
@@ -137,7 +137,9 @@ class StructuredGrid:
 
 	def sample_archive(self, n, strategy="random"):
 		allindivs = list(self.grid.values())
-		if(strategy=="random"):
+		if(n >= self.size()): # If there are not enough (or just enough) indivs in the archive, return them all
+			return allindivs
+		elif(strategy=="random"):
 			indices = np.random.choice(self.size(), n, replace=False)
 		elif(strategy=="novelty"):
 			if not self.with_novelty:
@@ -288,7 +290,7 @@ def build_toolbox_qd(evaluate,params,pool=None):
 def QDEa(evaluate, params, pool=None):
 	"""QD algorithm
 	"""
-	toolbox=build_toolbox_ns(evaluate,params,pool)
+	toolbox=build_toolbox_qd(evaluate,params,pool)
 
 	population = toolbox.population(n=params["pop_size"])
 		
@@ -298,8 +300,8 @@ def QDEa(evaluate, params, pool=None):
 
 	logbook = tools.Logbook()
 	logbook.header = ['gen', 'nevals']
-	if (stats is not None):
-		logbook.header += stats.fields
+	if (params["stats"] is not None):
+		logbook.header += params["stats"].fields
 
 	# Evaluate the individuals with an invalid fitness
 	invalid_ind = [ind for ind in population if not ind.fitness.valid]
@@ -332,7 +334,7 @@ def QDEa(evaluate, params, pool=None):
 	elif(params["archive_type"] == "grid"):
 		#Fetch behavior space dimensions
 		gridinfo = registered_environments[params["env_name"]]["grid_features"]
-		dim_ranges = zip(gridinfo["min_x"],gridinfo["max_x"])
+		dim_ranges = list(zip(gridinfo["min_x"],gridinfo["max_x"]))
 		if(params["grid_n_bin"] <= 0):
 			params["grid_n_bin"] = gridinfo["nb_bin"] # If no specific discretization is given, take the environment default
 			print("Archive grid bin number autoset to %d" % params["grid_n_bin"])
@@ -351,21 +353,21 @@ def QDEa(evaluate, params, pool=None):
 
 
 
-	record = stats.compile(population) if stats is not None else {}
+	record = params["stats"].compile(population) if params["stats"] is not None else {}
 	logbook.record(gen=0, nevals=len(invalid_ind), **record)
-	if verbose:
+	if(verbosity(params)):
 		print(logbook.stream)
 	
 	for ind in population:
 		ind.evolvability_samples=None # To prevent memory from inflating too much..
 	
 	# Begin the generational process
-	for gen in range(1, ngen + 1):
+	for gen in range(1, params["nb_gen"] + 1):
 		# Sample from the archive
 		parents = archive.sample_archive(params["pop_size"], strategy=params["sample_strategy"])
 		
 		if(len(parents)) < params["pop_size"]:
-			print("WARNING: Not enough individuals in archive to sample %d parents; will complete with %d random individuals" % (n_parents, n_parents-len(parents)))
+			print("WARNING: Not enough individuals in archive to sample %d parents; will complete with %d random individuals" % (params["pop_size"], params["pop_size"]-len(parents)))
 			extra_random_indivs = toolbox.population(n=(params["pop_size"]-len(parents)))
 			nb_eval+=len(extra_random_indivs)
 			extra_fitnesses = toolbox.map(toolbox.evaluate, extra_random_indivs)
@@ -379,7 +381,7 @@ def QDEa(evaluate, params, pool=None):
 			parents += extra_random_indivs
 		
 		# Vary the population
-		offspring = algorithms.varOr(parents, toolbox, params["pop_size"], params["cxpb"], params["mutpb")
+		offspring = algorithms.varOr(parents, toolbox, params["pop_size"], params["cxpb"], params["mutpb"])
 
 		# Evaluate the individuals with an invalid fitness
 		invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -409,7 +411,7 @@ def QDEa(evaluate, params, pool=None):
 
 
 
-		print("Gen %d - %d individuals added to the archive"%(gen, n_added))
+		print("Gen %d - %d individuals added to the archive (current size %d)"%(gen, n_added, archive.size()))
 
 
 		if (("eval_budget" in params.keys()) and (params["eval_budget"]!=-1) and (nb_eval>=params["eval_budget"])): 
@@ -425,9 +427,9 @@ def QDEa(evaluate, params, pool=None):
 		generate_evolvability_samples(params, offspring, gen, toolbox)
 		
 		# Update the statistics with the new population
-		record = stats.compile(offspring) if stats is not None else {}
+		record = params["stats"].compile(offspring) if params["stats"] is not None else {}
 		logbook.record(gen=gen, nevals=len(invalid_ind), **record)
-		if verbose:
+		if(verbosity(params)):
 			print(logbook.stream)
 
 		for ind in offspring:
