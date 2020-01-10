@@ -197,7 +197,7 @@ class UnstructuredArchive:
 	
 	def try_add(self,indiv):
 		bd = indiv.bd
-		close_neighbors = ([] if(self.kdtree is None) else self.kdtree.query_ball_point(bd, self.r))
+		close_neighbors = ([] if((self.kdtree is None) or (self.r == 0)) else self.kdtree.query_ball_point(bd, self.r))
 		if not close_neighbors: # No neighbors in ball, no problem - add indiv
 			self.archive.append(indiv)
 			self.update_novelty()
@@ -326,7 +326,7 @@ def QDEa(evaluate, params, pool=None):
 
 	if((params["archive_type"] == "unstructured") or (params["archive_type"] == "archive")):
 		# If no ball size is given, take a diameter of average size of a dimension / nb_bin
-		if(params["unstructured_neighborhood_radius"] <= 0):
+		if(params["unstructured_neighborhood_radius"] < 0):
 			#Fetch behavior space dimensions
 			gridinfo = registered_environments[params["env_name"]]["grid_features"]
 			avg_dim_sizes = np.mean(np.array(gridinfo["max_x"]) - np.array(gridinfo["min_x"]))
