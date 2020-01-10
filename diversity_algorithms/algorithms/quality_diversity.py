@@ -108,7 +108,7 @@ class StructuredGrid:
 		if(in_archive):
 			return sum(dists[1:self.k+1])/self.k # dists[0] is the distance to yourself
 		else:
-			return sum(dists[:self.k])/self.k # dists[0] is the distance to yourself
+			return sum(dists[:self.k])/self.k
 
 
 
@@ -192,7 +192,7 @@ class UnstructuredArchive:
 		if(in_archive):
 			return sum(dists[1:self.k+1])/self.k # dists[0] is the distance to yourself
 		else:
-			return sum(dists[:self.k])/self.k # dists[0] is the distance to yourself
+			return sum(dists[:self.k])/self.k
 	
 	
 	def try_add(self,indiv):
