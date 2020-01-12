@@ -5,6 +5,7 @@ import subprocess
 import dill
 import pickle
 import sys
+import uuid
 
 from diversity_algorithms.analysis.population_analysis import *
 
@@ -28,6 +29,12 @@ class Indiv:
            return self.g[i]
        def __setitem__(self,i,v):
            self.g[i]=v
+
+
+def generate_uuid(): # Generate an unique ID with the Python UUID module
+    u = uuid.uuid4()
+    return u.hex
+
 
 def generate_exp_name(name=""):
     d=datetime.datetime.today()
@@ -132,7 +139,7 @@ def dump_data(data_list, gen, params, prefix="population", complementary_name=""
 				ind.dump_to_dict(out_dict,i, attrs)
 			except AttributeError:
 				if ("all" in attrs):
-					myattrs=attrs+["ind", "fit", "novelty", "bd"]
+					myattrs=attrs+["ind", "fit", "novelty", "bd", "id", "parent_id"]
 				else:
 					myattrs=attrs
 				if ("ind" in myattrs):
@@ -186,11 +193,15 @@ def load_pop(dumpfile):
     return pop
 
 def load_pop_toolbox(dumpfile, toolbox):
-    pop_dict=np.load(dumpfile, allow_pickle=True)
+    try:
+        pop_dict=np.load(dumpfile, allow_pickle=True)
+    except IOError:
+        print("Error: cannot find "+dumpfile)
+        sys.exit(1)
     pop=[]
     for i in range(pop_dict["size"]):
-        if ("fitness_%d"%(i) in pop_dict.keys()):
-            fit=pop_dict["fitness_%d"%(i)]
+        if ("fit_%d"%(i) in pop_dict.keys()):
+            fit=pop_dict["fit_%d"%(i)]
         else:
             continue
             fit=None
@@ -209,7 +220,7 @@ def load_pop_toolbox(dumpfile, toolbox):
             ind.strategy.sigma = pop_dict["sigma_%d"%(i)]
             ind.strategy.w = pop_dict["w_%d"%(i)]            
         else:
-            ind=Indiv(pop_dict["geno_%d"%(i)], fit,bd)
+            ind=Indiv(pop_dict["ind_%d"%(i)], fit,bd)
             #geno=pop_dict["geno_%d"%(i)]
 
             #ind=toolbox.individual()
@@ -224,13 +235,13 @@ def load_pop_toolbox(dumpfile, toolbox):
         pop.append(ind)
     return pop
 		    
-def generate_evolvability_samples(params, population, gen, toolbox):
+def generate_evolvability_samples(params, population, gen, toolbox, force=False):
     """Generates a sample of individuals from the given population. 
 
     Generates a sample of individuals from the given population. It either relies on the toolbox (with the crossover and mutation probabilities) or on the strategy (if the individuals have one) to generate the points. 
     """
 
-    if (params["evolvability_nb_samples"]>0) and (params["dump_period_evolvability"]>0) and (gen>0) and (gen % params["dump_period_evolvability"]==0):
+    if (force) or ((params["evolvability_nb_samples"]>0) and (params["dump_period_evolvability"]>0) and (gen>0) and (gen % params["dump_period_evolvability"]==0)):
         print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(params["evolvability_nb_samples"]))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
@@ -246,7 +257,7 @@ def generate_evolvability_samples(params, population, gen, toolbox):
             except AttributeError:
                     ind.evolvability_samples=sample_from_pop([ind],toolbox,params["evolvability_nb_samples"],params["cxpb"],params["mutpb"])
 
-            dump_data(ind.evolvability_samples,gen, params, prefix="evolvability", complementary_name="ind%d"%(i), attrs=["bd"])
+            dump_data(ind.evolvability_samples,gen, params, prefix="evolvability", complementary_name="ind%d"%(i), attrs=["bd"], force=force)
             ig+=1
         print("")
 

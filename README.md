@@ -15,10 +15,17 @@ The name of the different packages are self-explaining. Experiments contains the
 
 ## How to use it ?
 
-Go to diversity_algorithms/experiments and launch:
+First, install the module with ``pip3 install .`` (use -e flag if you want editable/link installation)
+
+Then the scripts to run are the ``gym_<algo>.py`` in experiments. Launch for example:
 ```
-python3 -m scoop maze_ns_exploration.py
+python3 -m scoop gym_novelty.py
 ```
+for novelty search.
+
+See parameters in the code (the ``gym_<algo>.py`` files) for task, hyperparameters, variants, etc. For example ``python3 -m scoop gym_novelty.py -e Fastsim-Pugh2015 -g 1000`` to run Novelty Search for 1000 generations on the maze from the Pugh et al. 2015 paper.
+
+
 If you omit the ``-m scoop`` parameter it will run correctly but without parallelism.
 
 This will create a directory named after the date and time you have launched that command to store the results of the experiments in the form of bd_XXXX.log files for the behavior descriptors generated at generation XXXX and population files pop_genYYY.npz for generation YYY. bd files are plain text files and pop files are numpy-zipped data files.
