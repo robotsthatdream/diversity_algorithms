@@ -186,7 +186,11 @@ def load_pop(dumpfile):
     return pop
 
 def load_pop_toolbox(dumpfile, toolbox):
-    pop_dict=np.load(dumpfile, allow_pickle=True)
+    try:
+        pop_dict=np.load(dumpfile, allow_pickle=True)
+    except IOError:
+        print("Error: cannot find "+dumpfile)
+        sys.exit(1)
     pop=[]
     for i in range(pop_dict["size"]):
         if ("fit_%d"%(i) in pop_dict.keys()):
