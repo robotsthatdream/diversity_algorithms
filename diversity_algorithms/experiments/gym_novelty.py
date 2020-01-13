@@ -68,7 +68,8 @@ params={
 	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
 	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	"alphas": RunParam("A", 1.1, "alpha for the computation of alpha shapes, to build explored areas and compute distance to them"),
-	}
+        "stop_archive_pop_update": RunParam("S", -1, "generation at which to stop updating the set of indiv the novelty is computed with, -1 means normal mode (without stopping)"),
+}
 
 analyze_params(params, sys.argv)
 

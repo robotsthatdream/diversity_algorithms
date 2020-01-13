@@ -25,6 +25,8 @@ class NovArchive:
         return self.all_bd
 
     def update(self,new_bd):
+        if (len(new_bd)==0):
+            return
         oldsize=len(self.all_bd)
         if (oldsize>0):
             for bd in new_bd:
@@ -55,7 +57,7 @@ class NovArchive:
     def size(self):
         return len(self.all_bd)
     
-def updateNovelty(population, offspring, archive, params):
+def updateNovelty(population, offspring, archive, params, population_saved=None):
    """Update the novelty criterion (including archive update) 
 
    Implementation of novelty search following (Gomes, J., Mariano, P., & Christensen, A. L. (2015, July). Devising effective novelty search algorithms: A comprehensive empirical study. In Proceedings of GECCO 2015 (pp. 943-950). ACM.).
@@ -80,7 +82,10 @@ def updateNovelty(population, offspring, archive, params):
            if (True in np.isnan(ind.bd)):
                ind.novelty=-1
            else:
-               ind.novelty=archive.get_nov(ind.bd, population)
+               if (population_saved is not None):
+                   ind.novelty=archive.get_nov(ind.bd, population_none)
+               else:
+                   ind.novelty=archive.get_nov(ind.bd, population)
    else:
        if (verbosity(params,["all", "novelty"])):
            print("Update Novelty. Initial step...") 
@@ -119,6 +124,9 @@ def updateNovelty(population, offspring, archive, params):
            print("Novel archive update. Adding offspring: ")
            for offs in soff[iLast:len(soff)]:
                print("    nov="+str(offs.novelty)+" fit="+str(offs.fitness.values)+" bd="+str(offs.bd))
+   elif(add_strategy=="none"):
+       # nothing to do...
+       pass
    else:
        print("ERROR: updateNovelty: unknown add strategy(%s), valid alternatives are \"random\" and \"novel\""%(add_strategy))
        return None
