@@ -374,7 +374,7 @@ def QDEa(evaluate, params, pool=None):
 		
 		
 		if(params["n_add"] < params["pop_size"]): # We will select - at random - n_add parents from the sampled ones
-			parents.shuffle()
+			random.shuffle(parents)
 			parents = parents[:params["n_add"]]
 		
 		if(len(parents)) < params["n_add"]:
@@ -392,7 +392,7 @@ def QDEa(evaluate, params, pool=None):
 			parents += extra_random_indivs
 		
 		# Vary the population
-		offspring = algorithms.varOr(parents, toolbox, params["pop_size"], params["cxpb"], params["mutpb"])
+		offspring = algorithms.varOr(parents, toolbox, params["n_add"], params["cxpb"], params["mutpb"])
 
 		# Evaluate the individuals with an invalid fitness
 		invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -444,7 +444,7 @@ def QDEa(evaluate, params, pool=None):
 		
 		#For evolvability, sample the params["pop_size"] most novel
 		evolvability_pop = archive.sample_archive(params["pop_size"], strategy="novelty")
-		generate_evolvability_samples(params, parents, gen-1, toolbox)
+		generate_evolvability_samples(params, evolvability_pop, gen, toolbox)
 		for ind in evolvability_pop:
 			ind.evolvability_samples=None
 

@@ -62,7 +62,7 @@ params={
 	"archive_type" : RunParam("A", "grid", "Archive type (grid or unstructured)"),
 	"grid_n_bin" : RunParam("", -1, "Number of bins per dimension for grid archive (default auto = environment default)"),
 	"unstructured_neighborhood_radius" : RunParam("", -1., "Replace radius for unstructured archive (default = half default grid size)"),
-	"replace_strategy": RunParam("r", "random", "strategy for archive replacement (always, never, random, fitness or novelty)"),
+	"replace_strategy": RunParam("r", "always", "strategy for archive replacement (always, never, random, fitness or novelty)"),
 	"sample_strategy": RunParam("s", "novelty", "strategy for sampling the archive (random or novelty)"),
 	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
