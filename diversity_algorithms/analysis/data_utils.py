@@ -1,6 +1,5 @@
 #!/usr/bin python -w
 
-import matplotlib.pyplot as plt
 import os,sys
 import re
 import numpy as np
