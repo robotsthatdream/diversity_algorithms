@@ -56,7 +56,8 @@ if with_scoop:
 params={
 	"run_dir_name": RunParam("R", "", "name of the dir in which to put the dir with the run files"),
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
-	"pop_size": RunParam("p", 100, "population size (number of offspring generated)"),
+	"pop_size": RunParam("p", 100, "population size (number of indiv sampled)"),
+	"n_add": RunParam("", 6, "number of children to add to the archive (equivalent to lambdaNov for NS"),
 	"variant": RunParam("a", "QD", "variant of the QD algorithm"),
 	"archive_type" : RunParam("A", "grid", "Archive type (grid or unstructured)"),
 	"grid_n_bin" : RunParam("", -1, "Number of bins per dimension for grid archive (default auto = environment default)"),

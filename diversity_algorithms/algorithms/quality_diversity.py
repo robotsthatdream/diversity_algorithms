@@ -82,12 +82,15 @@ class StructuredGrid:
 	def get_content_as_list(self):
 		return list(self.grid.values())
 
+	def _rebuild_kdtree(self):
+		self.kdtree=KDTree([ind.bd for ind in self.grid.values()])
+
 	def update_novelty(self):
 		if not self.with_novelty:
 			print("ERROR: Requested novelty computation operation but the grid was built with compute_novelty=False")
 			sys.exit(1)
 		# 1) Build KD tree
-		self.kdtree=KDTree([ind.bd for ind in self.grid.values()])
+		self._rebuild_kdtree()
 		# 2) Compute novelty values
 		for bin_ in self.grid:
 			nov = self.get_nov(self.grid[bin_].bd, in_archive=True)
@@ -125,14 +128,14 @@ class StructuredGrid:
 			if self.replace_strategy(old_indiv, indiv): # Replace
 				self.grid[indiv_bin] = indiv
 				if self.with_novelty:
-					self.update_novelty()
+					self._rebuild_kdtree()
 				return True
 			else: # Do not replace
 				return False
 		else: # Cell empty - add indiv
 			self.grid[indiv_bin] = indiv
 			if self.with_novelty:
-				self.update_novelty()
+				self._rebuild_kdtree()
 			return True
 
 	def sample_archive(self, n, strategy="random"):
@@ -172,9 +175,12 @@ class UnstructuredArchive:
 	def get_content_as_list(self):
 		return list(self.archive)
 
+	def _rebuild_kdtree(self):
+		self.kdtree=KDTree([ind.bd for ind in self.archive])
+
 	def update_novelty(self):
 		# 1) Build KD tree
-		self.kdtree=KDTree([ind.bd for ind in self.archive])
+		self._rebuild_kdtree()
 		# 2) Compute novelty values
 		for (i,ind) in enumerate(self.archive):
 			nov = self.get_nov(ind.bd, in_archive=True)
@@ -200,7 +206,7 @@ class UnstructuredArchive:
 		close_neighbors = ([] if((self.kdtree is None) or (self.r == 0)) else self.kdtree.query_ball_point(bd, self.r))
 		if not close_neighbors: # No neighbors in ball, no problem - add indiv
 			self.archive.append(indiv)
-			self.update_novelty()
+			self._rebuild_kdtree()
 			return True
 		else: # Neighbor(s)
 			replace_ok = True
@@ -214,7 +220,7 @@ class UnstructuredArchive:
 				for index in close_neighbors:
 					self.archive.pop(index) # Remove neighbors
 				self.archive.append(indiv) # Add new indiv
-				self.update_novelty() # Update novelty
+				self._rebuild_kdtree()
 				return True
 			else: # Do not replace
 				return False
@@ -322,8 +328,6 @@ def QDEa(evaluate, params, pool=None):
 		ind.am_parent=0
 	
 
-
-
 	if((params["archive_type"] == "unstructured") or (params["archive_type"] == "archive")):
 		# If no ball size is given, take a diameter of average size of a dimension / nb_bin
 		if(params["unstructured_neighborhood_radius"] < 0):
@@ -368,8 +372,13 @@ def QDEa(evaluate, params, pool=None):
 		# Sample from the archive
 		parents = archive.sample_archive(params["pop_size"], strategy=params["sample_strategy"])
 		
-		if(len(parents)) < params["pop_size"]:
-			print("WARNING: Not enough individuals in archive to sample %d parents; will complete with %d random individuals" % (params["pop_size"], params["pop_size"]-len(parents)))
+		
+		if(params["n_add"] < params["pop_size"]): # We will select - at random - n_add parents from the sampled ones
+			parents.shuffle()
+			parents = parents[:params["n_add"]]
+		
+		if(len(parents)) < params["n_add"]:
+			print("WARNING: Not enough individuals sampled to get %d parents; will complete with %d random individuals" % (params["n_add"], params["n_add"]-len(parents)))
 			extra_random_indivs = toolbox.population(n=(params["pop_size"]-len(parents)))
 			nb_eval+=len(extra_random_indivs)
 			extra_fitnesses = toolbox.map(toolbox.evaluate, extra_random_indivs)
@@ -401,15 +410,22 @@ def QDEa(evaluate, params, pool=None):
 			ind.am_parent=1
 		for ind in offspring:
 			ind.am_parent=0
-			
+#		
+#		# Compute novelties - useless, actually
+#		for ind in offspring:
+#			if(use_pop_for_nov):
+#				ind.novelty = archive.get_nov(ind.bd, in_archive=True, extra_indivs=offspring) # about in_archive, ind is not in the archive, but it's in extra_indivs - that works the same
+#			else:
+#				ind.novelty = archive.get_nov(ind.bd, in_archive=False)
+#		
 		# Try to add the offspring to the archive
 		n_added = 0
 		for ind in offspring:
 			if(archive.try_add(ind)):
 				n_added += 1
-			else:
-				ind.novelty = archive.get_nov(ind.bd, in_archive=False)
-		
+
+		# Rebuild novelty for whole archive
+		archive.update_novelty()
 
 
 
@@ -425,8 +441,13 @@ def QDEa(evaluate, params, pool=None):
 		dump_data(offspring, gen, params, prefix="population", attrs=["all"], force=terminates)
 		dump_data(offspring, gen, params, prefix="bd", complementary_name="population", attrs=["bd"], force=terminates)
 		dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"], force=terminates)
+		
+		#For evolvability, sample the params["pop_size"] most novel
+		evolvability_pop = archive.sample_archive(params["pop_size"], strategy="novelty")
+		generate_evolvability_samples(params, parents, gen-1, toolbox)
+		for ind in evolvability_pop:
+			ind.evolvability_samples=None
 
-		generate_evolvability_samples(params, offspring, gen, toolbox)
 		
 		# Update the statistics with the new population
 		record = params["stats"].compile(offspring) if params["stats"] is not None else {}
@@ -434,8 +455,7 @@ def QDEa(evaluate, params, pool=None):
 		if(verbosity(params)):
 			print(logbook.stream)
 
-		for ind in offspring:
-			ind.evolvability_samples=None
+
 
 			
 	return archive, logbook, nb_eval
