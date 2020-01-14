@@ -1,6 +1,7 @@
 #!/bin/bash
 #PBS -q alpha
-#PBS -l select=1:ncpus=64
+#PBS -l walltime=11:59:59
+#PBS -l select=1:ncpus=128
 #PBS -N diversity_algo
 
 # Alex Coninx
@@ -8,20 +9,18 @@
 # 13/01/2020
 
 
-USER_NAME=coninx
 
 # Complete this to where the installation script was run
-DIVERSITY_BASE_DIR=/home/${USER_NAME}/src/diversity
-RESULTS_DIR=/scratchalpha/${USER_NAME}/diversity
+DIVERSITY_BASE_DIR=/home/${USER}/src/diversity
+RESULTS_DIR=/scratchalpha/${USER}/diversity
 
-# Experiment specifications
 # Experiment specifications
 EXPERIMENT_SCRIPT="gym_novelty.py"
 DIVERSITY_ARGUMENTS=""
 
 # /!\ If you change this you should also probably manually change /!\
 #        the ncpus= directive in the PBS directive above
-N_WORKERS_SCOOP=64
+N_WORKERS_SCOOP=128
 
 
 echo "Creating dir ${RESULTS_DIR} if not existing"
