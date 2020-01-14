@@ -108,7 +108,7 @@ if(__name__=='__main__'):
 	sparams, pool=preparing_run(eval_func, params, with_scoop)
 	
 
-	pop, archive, logbook, nb_eval = QDEa(eval_with_functor, sparams, pool)
+	archive, logbook, nb_eval = QDEa(eval_with_functor, sparams, pool)
 
 	terminating_run(sparams, None, archive, logbook, nb_eval)
 
