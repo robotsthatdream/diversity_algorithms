@@ -62,14 +62,18 @@ def dump_exp_details(argv,run_name, params):
     gdir=os.path.dirname(argv[0])
     if (gdir==""):
         gdir="."
-    r=subprocess.run(["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE, cwd=gdir)
+    try:
+        r=subprocess.run(["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE, cwd=gdir)
+        git_hash = r.stdout.decode("utf-8")
+    except FileNotFoundError:
+        git_hash = "<unknown> (git not present)"
     try:
         os.mkdir(run_name)
     except OSError:
         pass
     f=open(run_name+"/info.log","w")
     f.write("## Features of the experiment ##\n")
-    f.write("Git hash: "+r.stdout.decode("utf-8"))
+    f.write("Git hash: "+git_hash)
     f.write("Command: "+" ".join(argv)+"\n")
     f.write("Params: \n")
     for k in params.keys():
