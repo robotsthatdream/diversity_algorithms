@@ -5,7 +5,7 @@
 # 7/10/2019
 
 WORK_DIR=$PWD
-DA_BRANCH=$NS_study
+DA_BRANCH="NS_study"
 
 
 while true; do
