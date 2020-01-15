@@ -96,9 +96,12 @@ def build_toolbox_ns(evaluate,params,pool=None):
         toolbox.register("select", tools.selBest, fit_attr='novelty')
     elif (variant == "Fit"):
         toolbox.register("select", tools.selBest, fit_attr='fitness')
+    elif (variant == "Random"):
+        toolbox.register("select", tools.selRandom)
     elif (variant == "DistExplArea"):
         toolbox.register("select", tools.selBest, fit_attr='dist_to_explored_area')
     else:
+        print("Variant not among the authorized variants (NS, Fit, Random, DistExplArea), assuming multi-objective variant")
         toolbox.register("select", tools.selNSGA2)
         
     toolbox.register("evaluate", evaluate)

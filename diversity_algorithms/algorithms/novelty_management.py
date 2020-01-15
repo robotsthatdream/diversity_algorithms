@@ -14,7 +14,10 @@ class NovArchive:
     """Archive used to compute novelty scores."""
     def __init__(self, lbd, k=15):
         self.all_bd=lbd
-        self.kdtree=KDTree(self.all_bd)
+        if (len(lbd)>0):
+            self.kdtree=KDTree(self.all_bd)
+        else:
+            self.kdtree=None # for archive-less experiments
         self.k=k
         #print("Archive constructor. size = %d"%(len(self.all_bd)))
 
@@ -47,7 +50,10 @@ class NovArchive:
                 continue
             assert len(bd)==len(ind.bd), "get_nov, bd of different sizes: len(bd)=%d, len(ind.bd)=%d"%(len(bd),len(ind.bd))
             dpop.append(np.linalg.norm(np.array(bd)-np.array(ind.bd)))
-        darch,ind=self.kdtree.query(np.array(bd),self.k)
+        if (self.kdtree is None):
+            darch=[] # archive-less NS (i.e. behavior diversity)
+        else:
+            darch,ind=self.kdtree.query(np.array(bd),self.k)
         d=dpop+list(darch)
         d.sort()
         if (d[0]!=0):
