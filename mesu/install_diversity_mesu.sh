@@ -5,6 +5,7 @@
 # 7/10/2019
 
 WORK_DIR=$PWD
+DA_BRANCH=$NS_study
 
 
 while true; do
@@ -87,9 +88,9 @@ CPPFLAGS="-I${PYBIND11_DIR}/include -I${FASTSIM_DIR}/include" LDFLAGS="-L${FASTS
 
 # 4) Install fastsim gym
 echo
-echo "====================================================="
-echo "===== (5/5) Installing the diversity algorithms ====="
-echo "====================================================="
+echo "========================================"
+echo "===== (4/5) Installing fastsim_git======"
+echo "========================================"
 echo
 cd $WORK_DIR
 git clone https://github.com/alexendy/fastsim_gym.git
@@ -107,6 +108,7 @@ echo
 cd $WORK_DIR
 git clone https://$GIT_USER@github.com/robotsthatdream/diversity_algorithms_dev.git
 cd diversity_algorithms_dev
+git checkout $DA_BRANCH
 pip3 install .
 # Also install dependencies
 echo
