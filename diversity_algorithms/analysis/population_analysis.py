@@ -84,12 +84,47 @@ def generate_uniform_grid(grid):
         print("Warning, too few samples to estimate coverage: nbsamples=%d, nbcells=%d"%(nbsamples,nbc))
     return grid_uniform
 
+def generate_reachable_uniform_grid(grid):
+    """Generate a uniform grid with the same shape and same number of points than grid."""
+    gu=np.array(grid)
+    gu_vec=np.ravel(gu)
+    def f(u):
+        if(u>0):
+            return 1
+        else:
+            return 0
+    grid_uniform=np.reshape(np.array(list(map(lambda v: f(v), gu_vec))), np.shape(grid))
+
+    nbnz=np.count_nonzero(grid)
+    nbsamples=np.sum(grid)
+
+    grid_uniform=nbsamples/nbnz*grid_uniform
+    return grid_uniform
+
 def jensen_shannon_distance(grid1,grid2):
     grid3=grid1+grid2
     grid4=grid1*np.log(2*grid1/grid3)+grid2*np.log(2*grid2/grid3)
     grid5=ma.masked_invalid(grid4)
     return grid5.sum()
     
+def exploration_uniformity(grid):
+    nbpts=sum(sum(grid))
+    gridN=grid/nbpts
+    gridU=generate_uniform_grid(grid)/nbpts
+    jsd=jensen_shannon_distance(gridN,gridU)
+    return 1-jsd
+
+def exploration_reachable_uniformity(grid):
+    vgr=np.ravel(grid)
+    vgrf=list(filter(lambda x: x>0, vgr))
+    vgru=generate_reachable_uniform_grid(vgrf)
+    nbpts=sum(vgrf)
+    vgrf=vgrf/nbpts
+    vgru=vgru/nbpts
+    jsd=jensen_shannon_distance(vgrf, vgru)
+    return 1-jsd
+
+
 def radius(x):
     """Return statistics about the distances between the points in x.
 
