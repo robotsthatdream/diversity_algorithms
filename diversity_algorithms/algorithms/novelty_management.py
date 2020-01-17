@@ -50,8 +50,8 @@ class NovArchive:
         darch,ind=self.kdtree.query(np.array(bd),self.k)
         d=dpop+list(darch)
         d.sort()
-        if (d[0]!=0):
-            print("WARNING in novelty search: the smallest distance should be 0 (distance to itself). If you see it, you probably try to get the novelty with respect to a population your indiv is not in. The novelty value is then the sum of the distance to the k+1 nearest divided by k. d[0]=%f"%(d[0]))
+        #if (d[0]!=0):
+        #    print("WARNING in novelty search: the smallest distance should be 0 (distance to itself). If you see it, you probably try to get the novelty with respect to a population your indiv is not in. The novelty value is then the sum of the distance to the k+1 nearest divided by k. d[0]=%f"%(d[0]))
         return sum(d[:self.k+1])/self.k # as the indiv is in the population, the first value is necessarily a 0.
 
     def size(self):
@@ -83,7 +83,7 @@ def updateNovelty(population, offspring, archive, params, population_saved=None)
                ind.novelty=-1
            else:
                if (population_saved is not None):
-                   ind.novelty=archive.get_nov(ind.bd, population_none)
+                   ind.novelty=archive.get_nov(ind.bd, population_saved)
                else:
                    ind.novelty=archive.get_nov(ind.bd, population)
    else:
