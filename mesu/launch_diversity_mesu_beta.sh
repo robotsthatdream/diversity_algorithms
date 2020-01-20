@@ -12,7 +12,7 @@
 
 # Complete this to where the installation script was run
 DIVERSITY_BASE_DIR=/home/${USER}/src/diversity
-RESULTS_DIR=/scratchbeta/${USER}/diversity
+RESULTS_DIR=/scratchbeta/${USER}/diversity_results
 
 # Experiment specifications
 EXPERIMENT_SCRIPT="gym_novelty.py"
@@ -32,7 +32,7 @@ mkdir -p ${RESULTS_DIR}
 module purge
 module load python-3.6
 
-CMD_LINE="python -m scoop -n ${N_WORKERS_SCOOP} --python-interpreter=${DIVERSITY_BASE_DIR}/diversity_algorithms_dev/mesu/python_wrapper_subprocess_pbs.sh  ${DIVERSITY_BASE_DIR}/diversity_algorithms_dev/diversity_algorithms/experiments/${EXPERIMENT_SCRIPT} ${DIVERSITY_ARGUMENTS}"
+CMD_LINE="python -m scoop -n ${N_WORKERS_SCOOP}  ${DIVERSITY_BASE_DIR}/diversity_algorithms_dev/diversity_algorithms/experiments/${EXPERIMENT_SCRIPT} ${DIVERSITY_ARGUMENTS}"
 
 echo "Loading virtualenv env in $DIVERSITY_BASE_DIR"
 
