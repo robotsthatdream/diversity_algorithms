@@ -97,7 +97,7 @@ def build_toolbox_ns(evaluate,params,pool=None):
     elif (variant == "Fit"):
         toolbox.register("select", tools.selBest, fit_attr='fitness')
     elif (variant == "Random"):
-        toolbox.register("select", tools.selRandom)
+        toolbox.register("select", random.sample)
     elif (variant == "DistExplArea"):
         toolbox.register("select", tools.selBest, fit_attr='dist_to_explored_area')
     else:

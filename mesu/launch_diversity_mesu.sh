@@ -12,7 +12,7 @@
 
 # Complete this to where the installation script was run
 DIVERSITY_BASE_DIR=/home/${USER}/src/diversity
-RESULTS_DIR=/scratchalpha/${USER}/diversity
+RESULTS_DIR=/scratchalpha/${USER}/diversity_results
 
 # Experiment specifications
 EXPERIMENT_SCRIPT="gym_novelty.py"

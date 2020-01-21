@@ -31,7 +31,46 @@ registered_environments["Fastsim-Pugh2015"] = {
 	"eval": gym_env.EvaluationFunctor,
 	"eval_params": {
 		"gym_env_name":"FastsimSimpleNavigation-v0",
-		"gym_params":{"xml_env":os.path.dirname(os.path.realpath(__file__))+"/assets/fastsim/pugh_maze.xml"}}, # should be reasonably robust
+		"gym_params":{"xml_env":os.path.dirname(os.path.realpath(__file__))+"/assets/fastsim/pugh_maze.xml"}},
+	"grid_features": {
+		"min_x": [0,0],
+		"max_x": [600, 600],
+		"nb_bin": 50
+	}
+}
+
+registered_environments["Fastsim-16x16"] = {
+	"bd_func": maze_behavior_descriptor,
+	"eval": gym_env.EvaluationFunctor,
+	"eval_params": {
+		"gym_env_name":"FastsimSimpleNavigation-v0",
+		"gym_params":{"xml_env":os.path.dirname(os.path.realpath(__file__))+"/assets/fastsim/realhard_maze.xml"}},
+	"grid_features": {
+		"min_x": [0,0],
+		"max_x": [600, 600],
+		"nb_bin": 50
+	}
+}
+
+registered_environments["Fastsim-12x12"] = {
+	"bd_func": maze_behavior_descriptor,
+	"eval": gym_env.EvaluationFunctor,
+	"eval_params": {
+		"gym_env_name":"FastsimSimpleNavigation-v0",
+		"gym_params":{"xml_env":os.path.dirname(os.path.realpath(__file__))+"/assets/fastsim/maze_12x12.xml"}},
+	"grid_features": {
+		"min_x": [0,0],
+		"max_x": [600, 600],
+		"nb_bin": 50
+	}
+}
+
+registered_environments["Fastsim-8x8"] = {
+	"bd_func": maze_behavior_descriptor,
+	"eval": gym_env.EvaluationFunctor,
+	"eval_params": {
+		"gym_env_name":"FastsimSimpleNavigation-v0",
+		"gym_params":{"xml_env":os.path.dirname(os.path.realpath(__file__))+"/assets/fastsim/maze_8x8.xml"}},
 	"grid_features": {
 		"min_x": [0,0],
 		"max_x": [600, 600],
