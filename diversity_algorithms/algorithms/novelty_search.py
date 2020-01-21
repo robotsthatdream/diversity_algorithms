@@ -245,13 +245,16 @@ def novelty_ea(evaluate, params, pool=None):
             
         pq=population+offspring
 
-        if(params["stop_archive_pop_update"]==-1) or (gen<params["stop_archive_pop_update"]):
-            archive=updateNovelty(pq,offspring,archive,params)
-        elif(gen>=params["stop_archive_pop_update"]):
-            if(params["stop_archive_pop_update"]==gen):
-                pop_saved=list(pq)
+        if(params["stop_archive_update"]==gen):
             params["add_strategy"]="none"
-            updateNovelty(pq,offspring,archive,params, pop_saved)
+
+        if(params["pop_for_novelty_estimation"]==0):
+            pop_for_novelty_estimation=[]
+        elif (params["freeze_pop"]==-1) or (gen<=params["freeze_pop"]):
+            pop_for_novelty_estimation=list(pq)
+
+
+        archive=updateNovelty(pq,offspring,archive,params, pop_for_novelty_estimation)
             
         alpha_shape = alphashape.alphashape(archive.all_bd, alphas)
         isortednov=sorted(range(len(pq)), key=lambda k: pq[k].novelty, reverse=True)

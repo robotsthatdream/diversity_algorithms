@@ -90,7 +90,7 @@ def updateNovelty(population, offspring, archive, params, population_saved=None)
            else:
                if (population_saved is not None):
                    ind.novelty=archive.get_nov(ind.bd, population_saved)
-               else:
+               else: 
                    ind.novelty=archive.get_nov(ind.bd, population)
    else:
        if (verbosity(params,["all", "novelty"])):
