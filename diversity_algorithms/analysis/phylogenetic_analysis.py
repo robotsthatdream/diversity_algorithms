@@ -46,6 +46,7 @@ class Individual(object):
 		self.id = uuid
 		self.bd = np.array(bd)
 		self.gob = gob # generation of birth
+		self.lastgen = gob # last generation where the indiv is seen
 		self.offspring = list()
 		self.fit = fitness
 		if(parent):
@@ -64,6 +65,7 @@ class Individual(object):
 		if(self.fit):
 			out += ("Fitness: %s" % str(self.bd)) + "\n"
 		out += ("Generation of birth: %d" % self.gob) + "\n"
+		out += ("Last seen on generation: %d (age %d gens)" % (self.lastgen, (1+self.lastgen-self.gob))) + "\n"
 		out += ("Parent: %s" % str(self.parent.id)) + "\n"
 		out += ("Distance to parent: %f" % self.dist_to_parent) + "\n"
 		out += ("Total evolutionary path length: %f" % self.evolutionary_path_length) + "\n"
@@ -122,6 +124,7 @@ def build_phylogenetic_tree(rundir, maxgen):
 			uuid = str(pop["id_%d" % i])
 			if uuid in indivs_by_uuid: # This is an old individual - just add it to the current gen
 				indivs_gen.append(indivs_by_uuid[uuid])
+				indivs_by_uuid[uuid].lastgen = gen # update the last generation seen attribute
 			else: # New individual
 				# First, find the parent
 				myparent_id = pop["parent_id_%d" % i]
@@ -132,7 +135,12 @@ def build_phylogenetic_tree(rundir, maxgen):
 						myparent = indivs_by_uuid[str(myparent_id)]
 					except KeyError:
 						print("WARNING: Can't find parent %s of indiv %s (indiv %d of gen %d)." % (str(myparent_id), uuid, i, gen))
-						myparent = unknown_parent # Set the unknown parent
+						if(gen == 1):
+							print("...but we're at the first generation, so we will consider there is no parent.")
+							myparent = None
+						else:
+							print("Setting unknown parent.")
+							myparent = unknown_parent # Set the unknown parent
 				myindiv = Individual(uuid, np.array(pop["bd_%d" % i]), gen, parent=myparent) # Create individual
 				indivs_by_uuid[uuid] = myindiv # Add ot to the big archive
 				indivs_gen.append(myindiv) # Add it to the current gen
