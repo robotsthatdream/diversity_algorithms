@@ -42,8 +42,8 @@ class NovArchive:
         if(True in np.isnan(bd)):
             return -1
 
-        if (len(population)==0):
-            print("WARNING: get_nov with an empty population")
+        #if (len(population)==0):
+        #    print("WARNING: get_nov with an empty population")
         dpop=[]
         for ind in population:
             if (True in np.isnan(ind.bd)):
