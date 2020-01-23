@@ -103,7 +103,7 @@ def generate_reachable_uniform_grid(grid):
 
 def jensen_shannon_distance(grid1,grid2):
     grid3=grid1+grid2
-    grid4=grid1*np.log(2*grid1/grid3)+grid2*np.log(2*grid2/grid3)
+    grid4=grid1*np.log2(2*grid1/grid3)+grid2*np.log2(2*grid2/grid3)
     grid5=ma.masked_invalid(grid4)
     return grid5.sum()
     
