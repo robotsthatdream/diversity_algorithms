@@ -11,7 +11,7 @@ import sys, os
 
 from diversity_algorithms.experiments.exp_utils import RunParam, analyze_params
 import diversity_algorithms.analysis.data_utils as du
-from diversity_algorithms.analysis.population_analysis import get_coverage, build_grid, update_grid, coverage
+from diversity_algorithms.analysis.population_analysis import get_coverage, build_grid, update_grid, coverage, exploration_reachable_uniformity
 
 
 
@@ -23,7 +23,7 @@ params_commandline = {
     "gen": RunParam("g", 0, "Generation to look up to"),
     "evofile_pattern" : RunParam("", "evolvability_ind%d_bd_gen%d.npz", "Evolvabilitty data files pattern"),
     "n_indivs": RunParam("", -1, "Number of indivs for which evolvability was generated (default = pop size)"),
-    "outfile_pattern": RunParam("","global_coverage_gen%d.npz", "Output file pattern"),
+    "outfile_pattern": RunParam("","coverage_uniformity_gen%d.npz", "Output file pattern"),
     "verbosity": RunParam("v",0, "Verbosity level")
 }
 
@@ -74,20 +74,24 @@ def grid_from_file(file,  min_x, max_x, nb_bin, verbose=False):
 	points=du.get_points_from_genfile(file)
 	grid = build_grid(min_x, max_x, nb_bin)
 	update_grid(grid,min_x, max_x, points)
+	cov = coverage(grid)
+	unif = exploration_reachable_uniformity(grid)
 	print(".", end='', flush=True)
-	return grid
+	return (grid, cov, unif)
 
 
 if(__name__=='__main__'):
 	print("%d evofiles to process" % len(evofiles))
-	print("Getting grids...")
-	indiv_grids = list(futures.map(lambda f: grid_from_file(f, min_x, max_x, nb_bin, verbose), evofiles))
+	print("Getting grids and individual coverages and uniformities...")
+	indiv_data = list(futures.map(lambda f: grid_from_file(f, min_x, max_x, nb_bin, verbose), evofiles))
+	indiv_grids, indiv_coverages, indiv_unifs = zip(*indiv_data)
 	print("Reducing...")
 	sum_grid = np.sum(indiv_grids, axis=0)
-	print("Computing global coverage...")
-	cov = coverage(sum_grid)
-	print("Done ! Coverage is %f" % cov)
+	print("Computing global coverage and uniformity...")
+	gcov = coverage(sum_grid)
+	gunif = exploration_reachable_uniformity(sum_grid)
+	print("Done ! Global coverage is %f and global reachable uniformity is %f" % (gcov, gunif))
 	print("Saving data...")
 	outfile = os.path.join(rundir,outfile_pattern % gen) 
-	np.savez(outfile, global_coverage=cov)
-	print("Global coverage data saved to %s" % outfile)
+	np.savez(outfile, global_coverage=gcov, global_uniformity=gunif, indiv_coverages=np.array(indiv_coverages), indiv_uniformities=np.array(indiv_unifs))
+	print("Coverage and rerachable uniformity data saved to %s" % outfile)
