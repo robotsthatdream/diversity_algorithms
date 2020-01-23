@@ -35,6 +35,9 @@ from diversity_algorithms.experiments.exp_utils import RunParam, analyze_params
 import dill as pk
 import gzip
 
+sys.setrecursionlimit(10000)
+
+
 def behavioral_dist(bd1, bd2):
 	return np.sqrt(np.sum((bd1 - bd2)**2))
 
