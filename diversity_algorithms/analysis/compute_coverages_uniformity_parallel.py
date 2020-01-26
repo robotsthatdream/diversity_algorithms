@@ -24,7 +24,8 @@ params_commandline = {
     "evofile_pattern" : RunParam("", "evolvability_ind%d_bd_gen%d.npz", "Evolvabilitty data files pattern"),
     "n_indivs": RunParam("", -1, "Number of indivs for which evolvability was generated (default = pop size)"),
     "outfile_pattern": RunParam("","coverage_uniformity_gen%d.npz", "Output file pattern"),
-    "verbosity": RunParam("v",0, "Verbosity level")
+    "verbosity": RunParam("v",0, "Verbosity level"),
+    "allow_partial" : RunParam("p",0, "If not enough evofiles are found, should we compute with the present files ? (default no)")
 }
 
 analyze_params(params_commandline, sys.argv)
@@ -36,6 +37,7 @@ evofile_pattern = params_commandline["evofile_pattern"].get_value()
 n_indivs = params_commandline["n_indivs"].get_value()
 outfile_pattern = params_commandline["outfile_pattern"].get_value()
 verbose=bool(params_commandline["verbosity"].get_value())
+allow_partial=bool(params_commandline["allow_partial"].get_value())
 
 if(gen==0 or rundir==""):
 	print("Please specify generation and rundir")
@@ -81,6 +83,12 @@ def grid_from_file(file,  min_x, max_x, nb_bin, verbose=False):
 
 
 if(__name__=='__main__'):
+	if not evofiles:
+		print("No files found. Exiting.")
+		sys.exit(0)
+	if((not allow_partial) and (len(evofiles)<n_indivs)):
+		print("Not enough files found. Exiting.")
+		sys.exit(0)
 	print("%d evofiles to process" % len(evofiles))
 	print("Getting grids and individual coverages and uniformities...")
 	indiv_data = list(futures.map(lambda f: grid_from_file(f, min_x, max_x, nb_bin, verbose), evofiles))
