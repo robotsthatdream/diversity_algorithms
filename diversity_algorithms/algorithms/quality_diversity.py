@@ -1,7 +1,7 @@
 #!/usr/bin python -w
 
 import random
-from scipy.spatial import KDTree
+from scipy.spatial import cKDTree as KDTree
 import numpy as np
 import datetime
 import os, sys
@@ -105,7 +105,7 @@ class StructuredGrid:
 		for ind in extra_indivs:
 			dists.append(np.linalg.norm(np.array(bd)-np.array(ind.bd)))
 		# Query KNN in archive
-		dists_archive, _ = self.kdtree.query(np.array(bd),self.k+1)
+		dists_archive, _ = self.kdtree.query(np.array(bd),self.k+1, n_jobs=-1)
 		dists += list(dists_archive)
 		dists.sort()
 		if(in_archive):
@@ -192,7 +192,7 @@ class UnstructuredArchive:
 		for ind in extra_indivs:
 			dists.append(np.linalg.norm(np.array(bd)-np.array(ind.bd)))
 		# Query KNN in archive
-		dists_archive, _ = self.kdtree.query(np.array(bd),self.k+1)
+		dists_archive, _ = self.kdtree.query(np.array(bd),self.k+1, n_jobs=-1)
 		dists += list(dists_archive)
 		dists.sort()
 		if(in_archive):
@@ -203,7 +203,7 @@ class UnstructuredArchive:
 	
 	def try_add(self,indiv):
 		bd = indiv.bd
-		close_neighbors = ([] if((self.kdtree is None) or (self.r == 0)) else self.kdtree.query_ball_point(bd, self.r))
+		close_neighbors = ([] if((self.kdtree is None) or (self.r == 0)) else self.kdtree.query_ball_point(bd, self.r, n_jobs=-1))
 		if not close_neighbors: # No neighbors in ball, no problem - add indiv
 			self.archive.append(indiv)
 			self._rebuild_kdtree()
@@ -376,6 +376,9 @@ def QDEa(evaluate, params, pool=None):
 		# Sample from the archive
 		population = archive.sample_archive(params["pop_size"], strategy=params["sample_strategy"])
 		
+#		print("Sampled pop")
+#		for ind in population:
+#			print ("* ind %s novelty %f bd %s" % (ind.id, ind.novelty, str(ind.bd)))
 		
 		parents = list(population)
 		# We will select - at random - n_add parents from the sampled ones
@@ -432,7 +435,9 @@ def QDEa(evaluate, params, pool=None):
 		# Rebuild novelty for whole archive
 		archive.update_novelty()
 
-
+#		print("Added offspring :")
+#		for ind in offspring:
+#			print ("* ind %s novelty %f bd %s" % (ind.id, ind.novelty, str(ind.bd)))
 
 		print("Gen %d - %d individuals added to the archive (current size %d)"%(gen, n_added, archive.size()))
 
