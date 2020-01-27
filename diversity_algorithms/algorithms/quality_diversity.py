@@ -300,7 +300,7 @@ def QDEa(evaluate, params, pool=None):
 	"""
 	toolbox=build_toolbox_qd(evaluate,params,pool)
 
-	population = toolbox.population(n=params["pop_size"])
+	seed_population = toolbox.population(n=params["initial_seed_size"])
 		
 	#print("	 lambda=%d, mu=%d, cxpb=%.2f, mutpb=%.2f, ngen=%d, k=%d, lambda_nov=%d"%(lambda_,mu,cxpb,mutpb,ngen,k,lambdaNov)) #TODO replace
 
@@ -312,7 +312,7 @@ def QDEa(evaluate, params, pool=None):
 		logbook.header += params["stats"].fields
 
 	# Evaluate the individuals with an invalid fitness
-	invalid_ind = [ind for ind in population if not ind.fitness.valid]
+	invalid_ind = [ind for ind in seed_population if not ind.fitness.valid]
 	nb_eval+=len(invalid_ind)
 	fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
 	# fit is a list of fitness (that is also a list) and behavior descriptor
@@ -324,7 +324,7 @@ def QDEa(evaluate, params, pool=None):
 		ind.id = generate_uuid()
 		ind.parent_id = None
 
-	for ind in population:
+	for ind in seed_population:
 		ind.am_parent=0
 	
 
@@ -336,7 +336,7 @@ def QDEa(evaluate, params, pool=None):
 			avg_dim_sizes = np.mean(np.array(gridinfo["max_x"]) - np.array(gridinfo["min_x"]))
 			params["unstructured_neighborhood_radius"] = avg_dim_sizes / (2*gridinfo["nb_bin"])
 			print("Unstructured archive replace radius autoset to %f" % params["unstructured_neighborhood_radius"])
-		archive = UnstructuredArchive(population, r_ball_replace=params["unstructured_neighborhood_radius"], replace_strategy=replace_strategies[params["replace_strategy"]], k_nov_knn=params["k_nov"])
+		archive = UnstructuredArchive(seed_population, r_ball_replace=params["unstructured_neighborhood_radius"], replace_strategy=replace_strategies[params["replace_strategy"]], k_nov_knn=params["k_nov"])
 	elif(params["archive_type"] == "grid"):
 		#Fetch behavior space dimensions
 		gridinfo = registered_environments[params["env_name"]]["grid_features"]
@@ -344,7 +344,7 @@ def QDEa(evaluate, params, pool=None):
 		if(params["grid_n_bin"] <= 0):
 			params["grid_n_bin"] = gridinfo["nb_bin"] # If no specific discretization is given, take the environment default
 			print("Archive grid bin number autoset to %d" % params["grid_n_bin"])
-		archive = StructuredGrid(population, bins_per_dim=params["grid_n_bin"], dims_ranges=dim_ranges, replace_strategy=replace_strategies[params["replace_strategy"]], compute_novelty=True, k_nov_knn=params["k_nov"])
+		archive = StructuredGrid(seed_population, bins_per_dim=params["grid_n_bin"], dims_ranges=dim_ranges, replace_strategy=replace_strategies[params["replace_strategy"]], compute_novelty=True, k_nov_knn=params["k_nov"])
 
 
 
@@ -353,33 +353,38 @@ def QDEa(evaluate, params, pool=None):
 	gen=0
 
 	#Redefine the "initial population" as the archive content (maybe not all were added)
-	population = archive.get_content_as_list()
+	seed_population = archive.get_content_as_list()
 	
-	generate_evolvability_samples(params, population, gen, toolbox)
+	generate_evolvability_samples(params, seed_population, gen, toolbox)
 
 
 
-	record = params["stats"].compile(population) if params["stats"] is not None else {}
+	record = params["stats"].compile(seed_population) if params["stats"] is not None else {}
 	logbook.record(gen=0, nevals=len(invalid_ind), **record)
 	if(verbosity(params)):
 		print(logbook.stream)
 	
-	for ind in population:
+	for ind in seed_population:
 		ind.evolvability_samples=None # To prevent memory from inflating too much..
+	
+	# (probably) dump the original archive (gen0)
+	dump_data(archive.get_content_as_list(), gen, params, prefix="archive_full", attrs=["all"])
+	
 	
 	# Begin the generational process
 	for gen in range(1, params["nb_gen"] + 1):
 		# Sample from the archive
-		parents = archive.sample_archive(params["pop_size"], strategy=params["sample_strategy"])
+		population = archive.sample_archive(params["pop_size"], strategy=params["sample_strategy"])
 		
 		
-		if(params["n_add"] < params["pop_size"]): # We will select - at random - n_add parents from the sampled ones
-			random.shuffle(parents)
-			parents = parents[:params["n_add"]]
+		parents = list(population)
+		# We will select - at random - n_add parents from the sampled ones
+		random.shuffle(parents)
+		parents = parents[:params["n_add"]]
 		
 		if(len(parents)) < params["n_add"]:
 			print("WARNING: Not enough individuals sampled to get %d parents; will complete with %d random individuals" % (params["n_add"], params["n_add"]-len(parents)))
-			extra_random_indivs = toolbox.population(n=(params["pop_size"]-len(parents)))
+			extra_random_indivs = toolbox.population(n=(params["n_add"]-len(parents)))
 			nb_eval+=len(extra_random_indivs)
 			extra_fitnesses = toolbox.map(toolbox.evaluate, extra_random_indivs)
 			for ind, fit in zip(extra_random_indivs, extra_fitnesses):
@@ -438,9 +443,10 @@ def QDEa(evaluate, params, pool=None):
 		else:
 			terminates=False
 
-		dump_data(offspring, gen, params, prefix="population", attrs=["all"], force=terminates)
-		dump_data(offspring, gen, params, prefix="bd", complementary_name="population", attrs=["bd"], force=terminates)
-		dump_data(archive.get_content_as_list(), gen, params, prefix="archive", attrs=["all"], force=terminates)
+		dump_data(population, gen, params, prefix="population", attrs=["all"], force=terminates)
+		dump_data(offspring, gen, params, prefix="offspring", attrs=["all"], force=terminates)
+		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_full", attrs=["all"], force=terminates)
+		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_small", attrs=["novelty", "bd", "id", "parent_id"], force=terminates)
 		
 		#For evolvability, sample the params["pop_size"] most novel
 		evolvability_pop = archive.sample_archive(params["pop_size"], strategy="novelty")
