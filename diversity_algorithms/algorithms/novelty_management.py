@@ -79,19 +79,21 @@ def updateNovelty(population, offspring, archive, params, population_saved=None)
    k=params["k"]
    add_strategy=params["add_strategy"]
    _lambda=params["lambda_nov"]
+   
+   if (population_saved is not None):
+       ref_pop=population_saved
+   else: 
+       ref_pop=population
 
    # Novelty scores updates
-   if (archive) and (archive.size()>=k):
+   if (archive) and (archive.size()+len(ref_pop)>=k):
        if (verbosity(params,["all", "novelty"])):
            print("Update Novelty. Archive size=%d"%(archive.size())) 
        for ind in population:
            if (True in np.isnan(ind.bd)):
                ind.novelty=-1
            else:
-               if (population_saved is not None):
-                   ind.novelty=archive.get_nov(ind.bd, population_saved)
-               else: 
-                   ind.novelty=archive.get_nov(ind.bd, population)
+               ind.novelty=archive.get_nov(ind.bd, ref_pop)
    else:
        if (verbosity(params,["all", "novelty"])):
            print("Update Novelty. Initial step...") 
