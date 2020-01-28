@@ -223,8 +223,18 @@ def novelty_ea(evaluate, params, pool=None):
         
     # Begin the generational process
     for gen in range(1, params["nb_gen"] + 1):
-        # Vary the population
-        offspring = algorithms.varOr(population, toolbox, lambda_, params["cxpb"], params["mutpb"])
+
+        if (gen==params["restart"]):
+            print("Restart: we reinitialize the population")
+            offspring = toolbox.population(n=lambda_)
+            for ind in offspring:
+                ind.bd=None
+                ind.id = generate_uuid()
+                ind.parent_id = None
+            population=[]
+        else:
+            # Vary the population
+            offspring = algorithms.varOr(population, toolbox, lambda_, params["cxpb"], params["mutpb"])
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]

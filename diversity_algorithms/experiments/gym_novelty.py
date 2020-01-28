@@ -71,6 +71,7 @@ params={
         "stop_archive_update": RunParam("S", -1, "generation at which to stop updating the archive, -1 means normal mode, i.e. no stop (control experiment)"),
 	"freeze_pop": RunParam("F", -1, "generation at which to freeze the population taken into account to estimate novelty, -1 means no freeze (control experiment)"),
 	"pop_for_novelty_estimation": RunParam("P", 1, "Use pop (1) or not(0) in the novelty estimation (control experiment)"),
+        "restart": RunParam("r", -1, "generation at which to restart, i.e. to reinitialize the population to random individuals (control experiment)"),
 }
 
 analyze_params(params, sys.argv)
