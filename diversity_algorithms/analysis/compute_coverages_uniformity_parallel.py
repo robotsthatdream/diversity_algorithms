@@ -70,6 +70,11 @@ for i in range(n_indivs):
 	else:
 		print("WARNING: could not find '%s'" % filepath)
 
+if not evofiles:
+	print("No evofiles found. Exiting.")
+	sys.exit(1)
+
+
 def grid_from_file(file,  min_x, max_x, nb_bin, verbose=False):
 	if(verbose):
 		print("Computing grid for '%s'..." % file, end='')

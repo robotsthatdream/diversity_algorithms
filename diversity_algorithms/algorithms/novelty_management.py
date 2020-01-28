@@ -1,6 +1,6 @@
 
 import random
-from scipy.spatial import KDTree
+from scipy.spatial import cKDTree as KDTree
 import numpy as np
 from operator import attrgetter
 from diversity_algorithms.algorithms.utils import verbosity
@@ -53,7 +53,7 @@ class NovArchive:
         if (self.kdtree is None):
             darch=[] # archive-less NS (i.e. behavior diversity)
         else:
-            darch,ind=self.kdtree.query(np.array(bd),self.k)
+            darch,ind=self.kdtree.query(np.array(bd),self.k, n_jobs=-1)
         d=dpop+list(darch)
         d.sort()
         #if (d[0]!=0):

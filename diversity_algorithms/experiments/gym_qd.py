@@ -58,6 +58,7 @@ params={
 	"verbosity": RunParam("v", "none", "verbosity level (all, none or module specific values"),
 	"pop_size": RunParam("p", 100, "population size (number of indiv sampled)"),
 	"n_add": RunParam("", 6, "number of children to add to the archive (equivalent to lambdaNov for NS"),
+	"initial_seed_size": RunParam("i", 100, "number of random individuals to generate and try to add to the archive to seed it at the beginning"),
 	"variant": RunParam("a", "QD", "variant of the QD algorithm"),
 	"archive_type" : RunParam("A", "grid", "Archive type (grid or unstructured)"),
 	"grid_n_bin" : RunParam("", -1, "Number of bins per dimension for grid archive (default auto = environment default)"),
@@ -65,11 +66,12 @@ params={
 	"replace_strategy": RunParam("r", "always", "strategy for archive replacement (always, never, random, fitness or novelty)"),
 	"sample_strategy": RunParam("s", "novelty", "strategy for sampling the archive (random or novelty)"),
 	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),
-	"nb_gen":   RunParam("g", 100, "number of generations"),
+	"nb_gen":   RunParam("g", 1000, "number of generations"),
 	"dump_period_evolvability": RunParam("V", 0, "period of evolvability estimation"),
-	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
+	"dump_period_offspring": RunParam("o", 1, "period of behavior descriptor dump"),
 	"dump_period_population": RunParam("d", 1, "period of population dump"),
-	"dump_period_archive": RunParam("D", 1, "period of archive dump"),
+	"dump_period_archive_full": RunParam("D", 100, "period of a full archive dump (with full genotype)"),
+	"dump_period_archive_small": RunParam("Q", 1, "period of minor archive dump (just BDs, ID and novelty)"),
 	"cxpb": RunParam("", 0., "cross-over rate"), # No crossover
 	"mutpb": RunParam("",1., "mutation rate"),  # All offspring are mutated...
 	"indpb": RunParam("",0.1, "indiv probability"), # ...but only 10% of parameters are mutated
