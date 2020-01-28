@@ -52,6 +52,7 @@ params={
 	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),
 	"nb_gen":   RunParam("g", 100, "number of generations"),
 	"dump_period_evolvability": RunParam("V", 100, "period of evolvability estimation"),
+	"extra_evolvability_gens": RunParam("x", "", "coma-separated lists of extra periods when to estimate evolvability"),
 	"dump_period_bd": RunParam("b", 1, "period of behavior descriptor dump"),
 	"dump_period_population": RunParam("d", 1, "period of population dump"),
 	"dump_period_archive": RunParam("D", 1, "period of archive dump"),
