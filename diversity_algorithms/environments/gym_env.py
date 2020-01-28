@@ -9,6 +9,8 @@ import time
 #import resource
 
 from diversity_algorithms.controllers import SimpleNeuralController #, DNNController
+from diversity_algorithms.analysis.data_utils import listify
+
 
 # Fitness/evaluation function
 
@@ -16,7 +18,7 @@ default_max_step = 2000 # same as C++ sferes experiments
 
 
 class EvaluationFunctor:
-	def __init__(self, gym_env_name=None, gym_params={}, controller=None, controller_type=None, controller_params=None, output='total_reward',max_step=default_max_step, bd_function=None):
+	def __init__(self, gym_env_name=None, gym_params={}, controller=None, controller_type=None, controller_params=None, output='-dist_obj',max_step=default_max_step, bd_function=None):
 		global current_serial
 		#print("Eval functor created")
 		#Env
@@ -103,17 +105,28 @@ class EvaluationFunctor:
 		#print("Eval done !")
 		# Select fitness
 		
-		if(self.out=='total_reward'):
-			fitness = [total_reward]
-		elif(self.out=='final_reward'):
-			fitness = [final_reward]
-		elif(self.out==None or self.out=='none'):
-			fitness = [None]
-		elif(self.out in info.keys):
-			fitness = listify(info[self.out])
+		outdata = str(self.out)
+		# Detect minus sign
+		if(outdata[0] == '-'):
+			outdata = outdata[1:]
+			sign = -1
 		else:
-			print("ERROR: No known output %s" % output)
+			sign = 1
+		
+		if(outdata=='total_reward'):
+			fitness = [total_reward]
+		elif(outdata=='final_reward'):
+			fitness = [final_reward]
+		elif(outdata==None or self.out=='none'):
+			fitness = [None]
+		elif(outdata in info):
+			fitness = listify(info[outdata])
+		else:
+			print("ERROR: No known output %s" % outdata)
 			return None
+		
+		# Change sign if needed
+		fitness = list(map(lambda x:sign*x, fitness))
 		
 		if self.get_behavior_descriptor is None:
 			self.traj=None # to avoid taking too much memory
