@@ -244,8 +244,7 @@ def generate_evolvability_samples(params, population, gen, toolbox, force=False)
 
     Generates a sample of individuals from the given population. It either relies on the toolbox (with the crossover and mutation probabilities) or on the strategy (if the individuals have one) to generate the points. 
     """
-
-    if (force) or ((params["evolvability_nb_samples"]>0) and (params["dump_period_evolvability"]>0) and (gen>0) and (gen % params["dump_period_evolvability"]==0)):
+    if (force) or ((params["evolvability_nb_samples"]>0) and (params["dump_period_evolvability"]>0) and (gen>0) and ((gen % params["dump_period_evolvability"]==0) or gen in params["extra_evolvability_gens"])):
         print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(params["evolvability_nb_samples"]))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
@@ -261,7 +260,7 @@ def generate_evolvability_samples(params, population, gen, toolbox, force=False)
             except AttributeError:
                     ind.evolvability_samples=sample_from_pop([ind],toolbox,params["evolvability_nb_samples"],params["cxpb"],params["mutpb"])
 
-            dump_data(ind.evolvability_samples,gen, params, prefix="evolvability", complementary_name="ind%d"%(i), attrs=["bd"], force=force)
+            dump_data(ind.evolvability_samples,gen, params, prefix="evolvability", complementary_name="ind%d"%(i), attrs=["bd"], force=True)
             ig+=1
         print("")
 
