@@ -66,7 +66,7 @@ def dump_exp_details(argv,run_name, params):
         r=subprocess.run(["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE, cwd=gdir)
         git_hash = r.stdout.decode("utf-8")
     except FileNotFoundError:
-        git_hash = "<unknown> (git not present)"
+        git_hash = "<unknown> (git not present)\n"
     try:
         os.mkdir(run_name)
     except OSError:
