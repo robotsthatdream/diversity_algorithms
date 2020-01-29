@@ -7,6 +7,7 @@ import numpy as np
 import numpy.ma as ma
 import math as m
 from functools import *
+from scipy.spatial.distance import jensenshannon
 from deap import tools, base, algorithms
 
 def build_grid(min_x, max_x, nb_bin):
@@ -102,11 +103,12 @@ def generate_reachable_uniform_grid(grid):
     return grid_uniform
 
 def jensen_shannon_distance(grid1,grid2):
-    grid3=grid1+grid2
-    grid4=grid1*np.log2(2*grid1/grid3)+grid2*np.log2(2*grid2/grid3)
-    grid5=ma.masked_invalid(grid4)
-    return grid5.sum()
-    
+#    grid3=grid1+grid2
+#    grid4=grid1*np.log(2*grid1/grid3)+grid2*np.log(2*grid2/grid3)
+#    grid5=ma.masked_invalid(grid4)
+#    return grid5.sum()
+     return jensenshannon(np.asarray(grid1).flatten(),np.asarray(grid2).flatten())
+
 def exploration_uniformity(grid):
     nbpts=sum(sum(grid))
     gridN=grid/nbpts
