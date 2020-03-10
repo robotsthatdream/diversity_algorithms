@@ -9,7 +9,7 @@ import os
 
 from diversity_algorithms.environments.behavior_descriptors import *
 
-from diversity_algorithms.environments import gym_env
+from diversity_algorithms.environments import gym_env, dummy_env
 
 registered_environments = dict()
 
@@ -85,10 +85,21 @@ registered_environments["BipedalWalker"] = {
 		"gym_env_name":"BipedalWalker-v2",
 		"gym_params":{}}, # Default
 	"grid_features": {
-		"min_x": [-600,600],
+		"min_x": [-600,-600],
 		"max_x": [600, 600],
 		"nb_bin": 50
 	}
 }
 
 
+registered_environments["DummyMapping3D"] = {
+	"eval": dummy_env.SimpleMappingEvaluator,
+	"eval_params": {
+		"geno_size":3,
+		"mapping":"fitness_last"}, # Default
+	"grid_features": {
+		"min_x": [-5,-5],
+		"max_x": [5, 5],
+		"nb_bin": 50
+	}
+}
