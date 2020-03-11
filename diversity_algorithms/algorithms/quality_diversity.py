@@ -32,7 +32,7 @@ def criterion_novelty(ind):
 
 
 def replace_if_better(oldind,newind,criterion):
-	return oldind.fitness.values[fit_index] < newind.fitness.values[fit_index]
+	return criterion(oldind) < criterion(newind)
 
 def replace_if_fitter(oldind,newind):
 	return replace_if_better(oldind, newind, criterion=criterion_fitness)
@@ -61,8 +61,9 @@ class StructuredGrid:
 	""" Structured grid for MAP-Elite like stuff
 	    Also includes a KD-tree and maintain novelty scores
 	"""
-	def __init__(self, initial_pop, bins_per_dim, dims_ranges, replace_strategy=replace_never, compute_novelty=True, k_nov_knn=15):
+	def __init__(self, initial_pop, bins_per_dim, dims_ranges, replace_strategy=replace_never, compute_novelty=True, k_nov_knn=15, kd_update_scheme="default"):
 		self.dim = len(dims_ranges)
+		self.kd_update_scheme = kd_update_scheme
 		self.bins_per_dim = bins_per_dim
 		self.dims_ranges = dims_ranges
 		self.mins = np.array([r[0] for r in self.dims_ranges])
@@ -113,7 +114,13 @@ class StructuredGrid:
 		else:
 			return sum(dists[:self.k])/self.k
 
-
+	def post_add_update(self):
+		if(self.kd_update_scheme in ["default", "delayed"]): # Default = delayed : do nothing
+			return
+		elif(self.kd_update_scheme == "immediate"): # Immediate = juste rebuild tree
+			self._rebuild_kdtree()
+		elif(self.kd_update_scheme == "full"): # Full = rebuild all novelty scores (super costly)
+			self.update_novelty()
 
 	def bd_to_bin(self,bd):
 		normbd = (np.array(bd) - self.mins)/(self.maxs - self.mins)
@@ -128,14 +135,14 @@ class StructuredGrid:
 			if self.replace_strategy(old_indiv, indiv): # Replace
 				self.grid[indiv_bin] = indiv
 				if self.with_novelty:
-					self._rebuild_kdtree()
+					self.post_add_update()
 				return True
 			else: # Do not replace
 				return False
 		else: # Cell empty - add indiv
 			self.grid[indiv_bin] = indiv
 			if self.with_novelty:
-				self._rebuild_kdtree()
+				self.post_add_update()
 			return True
 
 	def sample_archive(self, n, strategy="random"):
@@ -159,8 +166,9 @@ class StructuredGrid:
 class UnstructuredArchive:
 	""" Unstructured archive
 	"""
-	def __init__(self, initial_pop, r_ball_replace, replace_strategy=replace_never, k_nov_knn=15):
+	def __init__(self, initial_pop, r_ball_replace, replace_strategy=replace_never, k_nov_knn=15, kd_update_scheme="default"):
 		self.r = r_ball_replace
+		self.kd_update_scheme = kd_update_scheme
 		self.archive = list()
 		self.replace_strategy = replace_strategy
 		self.k = k_nov_knn
@@ -200,13 +208,21 @@ class UnstructuredArchive:
 		else:
 			return sum(dists[:self.k])/self.k
 	
+	def post_add_update(self):
+		if(self.kd_update_scheme in ["default", "immediate"]): # Default : juste rebuild tree
+			self._rebuild_kdtree()
+		elif(self.kd_update_scheme == "delayed"): # Do nothing
+			return
+		elif(self.kd_update_scheme == "full"): # Full = rebuild all novelty scores (super costly)
+			self.update_novelty()
+	
 	
 	def try_add(self,indiv):
 		bd = indiv.bd
 		close_neighbors = ([] if((self.kdtree is None) or (self.r == 0)) else self.kdtree.query_ball_point(bd, self.r, n_jobs=-1))
 		if not close_neighbors: # No neighbors in ball, no problem - add indiv
 			self.archive.append(indiv)
-			self._rebuild_kdtree()
+			self.post_add_update()
 			return True
 		else: # Neighbor(s)
 			replace_ok = True
@@ -220,7 +236,7 @@ class UnstructuredArchive:
 				for index in close_neighbors:
 					self.archive.pop(index) # Remove neighbors
 				self.archive.append(indiv) # Add new indiv
-				self._rebuild_kdtree()
+				self.post_add_update()
 				return True
 			else: # Do not replace
 				return False
@@ -319,6 +335,7 @@ def QDEa(evaluate, params, pool=None):
 
 	for ind, fit in zip(invalid_ind, fitnesses):
 		ind.fitness.values = fit[0]
+		ind.fit = fit[0]
 		ind.parent_bd=None
 		ind.bd=listify(fit[1])
 		ind.id = generate_uuid()
@@ -327,6 +344,17 @@ def QDEa(evaluate, params, pool=None):
 	for ind in seed_population:
 		ind.am_parent=0
 	
+	# Warnings
+	if((params["archive_type"] == "unstructured") and (params["kdtree_update"] == "delayed")):
+		print("*WARNING* : Using unstrructured archive with delayed kd-tree update. This is quicker but may cause two individuals to be added to the same neighborhood at a given iteration. This may or may not be important depending on what you're doing.")
+	if((params["archive_type"] == "structured") and (params["kdtree_update"] == "immediate") and (params["replace_strategy"] != "novelty")):
+		print("*WARNING* : Using structured archive with immediate kd-tree update. This is not a problem but except with novelty-based replacement this is useless, and much slower.")
+	
+	if(params["kdtree_update"] == "full"):
+		if(params["replace_strategy"] == "novelty"):
+			print("*WARNING* : Doing novelty-based replacement with 'full' archive post-add update. This is the best way to do it but it's very slow !")
+		else:
+			print("*WARNING* : Doing 'full' archive post-add update. This is very slow and useless except with novelty-based replacement !")
 
 	if((params["archive_type"] == "unstructured") or (params["archive_type"] == "archive")):
 		# If no ball size is given, take a diameter of average size of a dimension / nb_bin
@@ -336,7 +364,7 @@ def QDEa(evaluate, params, pool=None):
 			avg_dim_sizes = np.mean(np.array(gridinfo["max_x"]) - np.array(gridinfo["min_x"]))
 			params["unstructured_neighborhood_radius"] = avg_dim_sizes / (2*gridinfo["nb_bin"])
 			print("Unstructured archive replace radius autoset to %f" % params["unstructured_neighborhood_radius"])
-		archive = UnstructuredArchive(seed_population, r_ball_replace=params["unstructured_neighborhood_radius"], replace_strategy=replace_strategies[params["replace_strategy"]], k_nov_knn=params["k_nov"])
+		archive = UnstructuredArchive(seed_population, r_ball_replace=params["unstructured_neighborhood_radius"], replace_strategy=replace_strategies[params["replace_strategy"]], k_nov_knn=params["k_nov"], kd_update_scheme=params["kdtree_update"])
 	elif(params["archive_type"] == "grid"):
 		#Fetch behavior space dimensions
 		gridinfo = registered_environments[params["env_name"]]["grid_features"]
@@ -344,10 +372,13 @@ def QDEa(evaluate, params, pool=None):
 		if(params["grid_n_bin"] <= 0):
 			params["grid_n_bin"] = gridinfo["nb_bin"] # If no specific discretization is given, take the environment default
 			print("Archive grid bin number autoset to %d" % params["grid_n_bin"])
-		archive = StructuredGrid(seed_population, bins_per_dim=params["grid_n_bin"], dims_ranges=dim_ranges, replace_strategy=replace_strategies[params["replace_strategy"]], compute_novelty=True, k_nov_knn=params["k_nov"])
+		archive = StructuredGrid(seed_population, bins_per_dim=params["grid_n_bin"], dims_ranges=dim_ranges, replace_strategy=replace_strategies[params["replace_strategy"]], compute_novelty=True, k_nov_knn=params["k_nov"], kd_update_scheme=params["kdtree_update"])
+	else:
+		raise RuntimeError("Unknown archive type %s" % params["archive_type"])
 
 
-
+	if(params["n_add"] <= 0):
+		params["n_add"] = params["pop_size"]
 
 
 	gen=0
@@ -391,7 +422,8 @@ def QDEa(evaluate, params, pool=None):
 			nb_eval+=len(extra_random_indivs)
 			extra_fitnesses = toolbox.map(toolbox.evaluate, extra_random_indivs)
 			for ind, fit in zip(extra_random_indivs, extra_fitnesses):
-				ind.fitness.values = fit[0] 
+				ind.fitness.values = fit[0]
+				ind.fit = fit[0]
 				ind.parent_bd=None
 				ind.bd=listify(fit[1])
 				ind.id = generate_uuid()
@@ -408,6 +440,7 @@ def QDEa(evaluate, params, pool=None):
 		fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
 		for ind, fit in zip(invalid_ind, fitnesses):
 			ind.fitness.values = fit[0] 
+			ind.fit = fit[0]
 			ind.parent_bd=ind.bd
 			ind.bd=listify(fit[1])
 			ind.parent_id = ind.id
@@ -451,7 +484,7 @@ def QDEa(evaluate, params, pool=None):
 		dump_data(population, gen, params, prefix="population", attrs=["all"], force=terminates)
 		dump_data(offspring, gen, params, prefix="offspring", attrs=["all"], force=terminates)
 		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_full", attrs=["all"], force=terminates)
-		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_small", attrs=["novelty", "bd", "id", "parent_id"], force=terminates)
+		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_small", attrs=["novelty", "fit", "bd", "id", "parent_id"], force=terminates)
 		
 		#For evolvability, sample the params["pop_size"] most novel
 		evolvability_pop = archive.sample_archive(params["pop_size"], strategy="novelty")
@@ -461,7 +494,7 @@ def QDEa(evaluate, params, pool=None):
 
 		
 		# Update the statistics with the new population
-		record = params["stats"].compile(offspring) if params["stats"] is not None else {}
+		record = params["stats"].compile(population) if params["stats"] is not None else {}
 		logbook.record(gen=gen, nevals=len(invalid_ind), **record)
 		if(verbosity(params)):
 			print(logbook.stream)
