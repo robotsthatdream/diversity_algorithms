@@ -26,6 +26,20 @@ registered_environments["Fastsim-LS2011"] = {
 	}
 }
 
+registered_environments["Fastsim-LS2011-EnergyFitness"] = {
+	"bd_func": maze_behavior_descriptor,
+	"eval": gym_env.EvaluationFunctor,
+	"eval_params": {
+		"gym_env_name":"FastsimSimpleNavigation-v0",
+		"gym_params":{"reward_func":"minimize_energy"},
+		"output":"total_reward"},
+	"grid_features": {
+		"min_x": [0,0],
+		"max_x": [600, 600],
+		"nb_bin": 50
+	}
+}
+
 registered_environments["Fastsim-Pugh2015"] = {
 	"bd_func": maze_behavior_descriptor,
 	"eval": gym_env.EvaluationFunctor,
