@@ -63,7 +63,7 @@ params={
 	"archive_type" : RunParam("A", "grid", "Archive type (grid or unstructured)"),
 	"grid_n_bin" : RunParam("", -1, "Number of bins per dimension for grid archive (default auto = environment default)"),
 	"unstructured_neighborhood_radius" : RunParam("", -1., "Replace radius for unstructured archive (default = half default grid size)"),
-	"replace_strategy": RunParam("r", "fitness", "strategy for archive replacement (always, never, random, fitness or novelty)"),
+	"replace_strategy": RunParam("r", "fitness", "strategy for archive replacement (always, never, random, fitness, novelty or disttoparent)"),
 	"sample_strategy": RunParam("s", "random", "strategy for sampling the archive (random or novelty)"),
 	"kdtree_update": RunParam("K", "default", "Is the KD-tree updated every time an indiv has been added (immediate) or only once per gen (delayed) ? Default is delayed for structured archives and immediate for unstructured."),
 	"env_name": RunParam("e", "Fastsim-LS2011", "Environment name"),

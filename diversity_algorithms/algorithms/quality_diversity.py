@@ -18,6 +18,7 @@ def set_creator(cr):
 from deap import tools, base, algorithms
 
 from diversity_algorithms.algorithms.utils import *
+from diversity_algorithms.algorithms.stats import get_bd_dist_to_parent
 from diversity_algorithms.analysis.population_analysis import *
 from diversity_algorithms.analysis.data_utils import *
 
@@ -40,6 +41,10 @@ def replace_if_fitter(oldind,newind):
 def replace_if_newer(oldind,newind):
 	return replace_if_better(oldind, newind, criterion=criterion_novelty)
 
+def replace_if_further_from_parent(oldind,newind):
+	return replace_if_better(oldind, newind, criterion=get_bd_dist_to_parent) # No parent = -1
+
+
 def replace_always(oldind,newind):
 	return True
 
@@ -54,6 +59,7 @@ replace_strategies = {"never": replace_never,
 	"always": replace_always,
 	"random": replace_random,
 	"fitness": replace_if_fitter, # WARNING: Only makes sense with a fitness/quality, we don't have that now
+	"disttoparent": replace_if_further_from_parent,
 	"novelty": replace_if_newer}
 
 
