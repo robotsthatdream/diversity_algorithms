@@ -76,7 +76,6 @@ def grid_from_archive(points,  min_x, max_x, nb_bin):
 def stat_grid_coverage(archive, force=force_grid_recompute):
     if((archive_type=='grid') and not force): # Just use the MAP elites grid
         n_bins_total = np.power(nb_bin, len(min_x))
-        print("b")
         return archive["size"]/float(n_bins_total)
     else:
         points = get_points_from_npzarchive(archive)
