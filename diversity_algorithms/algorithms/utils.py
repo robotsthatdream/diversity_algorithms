@@ -123,7 +123,7 @@ def dump_logbook(logbook,gen,run_name="runXXX"):
         pass
     np.savez(run_name+"/logbook_gen%d.npz" % gen, **out_dict) 
     
-def dump_data(data_list, gen, params, prefix="population", complementary_name="", attrs=["all"], force=False):
+def dump_data(data_list, gen, params, prefix="population", complementary_name="", attrs=["all"], force=False, attrs_in_name=True):
 	# should fit to dump any data required. Examples:
 	# dump_data(pop, gen, params, prefix="pop", complementary_name="", attrs=["all"]) to dump the whole pop
 	# dump_data(pop[i].evolvability_samples, gen, params, prefix="bd_es", complementary_name="%d"%(i), attrs=["bd"]) to dump the bd of evolvability samples
@@ -165,7 +165,7 @@ def dump_data(data_list, gen, params, prefix="population", complementary_name=""
 			pass
 		if (complementary_name!= ""):
 			complementary_name+="_"
-		np.savez(params["run_name"]+"/"+prefix+"_"+complementary_name+"_".join(attrs)+"_gen%d.npz" % gen, **out_dict) 
+		np.savez(params["run_name"]+"/"+prefix+"_"+complementary_name+(("_".join(attrs)+"_") if attrs_in_name else "")+"gen%d.npz" % gen, **out_dict) 
 
 def load_pop(dumpfile):
     pop_dict=np.load(dumpfile, allow_pickle=True)

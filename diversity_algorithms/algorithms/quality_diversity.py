@@ -346,6 +346,8 @@ def QDEa(evaluate, params, pool=None):
 		ind.bd=listify(fit[1])
 		ind.id = generate_uuid()
 		ind.parent_id = None
+		ind.dist_parent = -1
+		ind.gen_created = 0
 
 	for ind in seed_population:
 		ind.am_parent=0
@@ -435,6 +437,8 @@ def QDEa(evaluate, params, pool=None):
 				ind.id = generate_uuid()
 				ind.parent_id = None
 				ind.am_parent=0
+				ind.dist_parent = -1
+				ind.gen_created = gen
 			parents += extra_random_indivs
 		
 		# Vary the population
@@ -452,6 +456,8 @@ def QDEa(evaluate, params, pool=None):
 			ind.parent_id = ind.id
 			ind.id = generate_uuid()
 			ind.am_parent=0
+			ind.dist_parent = get_bd_dist_to_parent(ind)
+			ind.gen_created = gen
 
 		for ind in parents:
 			ind.am_parent=1
@@ -489,8 +495,8 @@ def QDEa(evaluate, params, pool=None):
 
 		dump_data(population, gen, params, prefix="population", attrs=["all"], force=terminates)
 		dump_data(offspring, gen, params, prefix="offspring", attrs=["all"], force=terminates)
-		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_full", attrs=["all"], force=terminates)
-		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_small", attrs=["novelty", "fit", "bd", "id", "parent_id"], force=terminates)
+		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_full", attrs=["all"], force=terminates, attrs_in_name=False)
+		dump_data(archive.get_content_as_list(), gen, params, prefix="archive_small", attrs=["novelty", "fit", "bd", "id", "parent_id", "parent_bd", "dist_parent", "gen_created"], force=terminates, attrs_in_name=False)
 		
 		#For evolvability, sample the params["pop_size"] most novel
 		evolvability_pop = archive.sample_archive(params["pop_size"], strategy="novelty")
