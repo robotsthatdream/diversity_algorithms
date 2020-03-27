@@ -127,7 +127,7 @@ def generate_evolvability_archive(archive_file, archive_dir, n_to_sample, check_
         already_done = []
         if(check_exists):
             pattern_find_existing = re.compile("evolvability_ind([0-9]+).*gen%d.npz" % gen)
-            for filename in os.path.listdir(archive_dir):
+            for filename in os.listdir(archive_dir):
                 m = pattern_find_existing.match(filename)
                 if(m):
                     already_done.append(int(m.groups()[0]))
