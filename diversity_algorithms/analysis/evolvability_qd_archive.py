@@ -132,7 +132,7 @@ def generate_evolvability_archive(archive_file, archive_dir, n_to_sample, check_
                 if(m):
                     already_done.append(int(m.groups()[0]))
         if(already_done):
-            print("Found %d already computed evolvabilities")
+            print("Found %d already computed evolvabilities" %  already_done)
                 
         random_indices = list(range(n_archive))
         np.random.shuffle(random_indices)
