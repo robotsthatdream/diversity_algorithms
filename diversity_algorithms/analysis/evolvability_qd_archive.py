@@ -134,7 +134,7 @@ def generate_evolvability_archive(archive_file, archive_dir, n_to_sample, check_
         if(already_done):
             print("Found %d already computed evolvabilities")
                 
-        random_indices = list(range(n_to_sample))
+        random_indices = list(range(n_archive))
         np.random.shuffle(random_indices)
         random_indices_ok = [i for i in random_indices if i not in already_done] # Remove the already done
         random_indices_ok_sample = random_indices_ok[:n_to_sample] # Only keep n_to_sample at most
