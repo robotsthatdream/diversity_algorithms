@@ -143,7 +143,7 @@ def generate_evolvability_archive(archive_file, archive_dir, n_to_sample, check_
 
 
     generate_evolvability_samples(params_xp, pop_sample, gen, toolbox, force=True)
-    return population
+    return pop_sample
 
 
 
