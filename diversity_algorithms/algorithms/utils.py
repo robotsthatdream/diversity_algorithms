@@ -6,6 +6,7 @@ import dill
 import pickle
 import sys
 import uuid
+from collections.abc import Mapping
 
 from diversity_algorithms.analysis.population_analysis import *
 
@@ -238,7 +239,7 @@ def load_pop_toolbox(dumpfile, toolbox):
             ind.novelty=pop_dict["novelty_%d"%(i)]
         pop.append(ind)
     return pop
-		    
+    
 def generate_evolvability_samples(params, population, gen, toolbox, force=False):
     """Generates a sample of individuals from the given population. 
 
@@ -248,7 +249,13 @@ def generate_evolvability_samples(params, population, gen, toolbox, force=False)
         print("\nWARNING: evolvability_nb_samples>0. We generate %d individuals for each indiv in the population for statistical purposes"%(params["evolvability_nb_samples"]))
         print("sampling for evolvability: ",end='', flush=True)
         ig=0
-        for (i,ind) in enumerate(population):
+        # Support for ordered lists or dicts with indiv numbers :
+        if(isinstance(population, Mapping)):
+            to_iterate = population
+        else: # List
+            to_iterate = {i:ind for(i,ind) in enumerate(population)}
+        
+        for (i,ind) in to_iterate.items():
             print(".", end='', flush=True)
             try:
                 ind.evolvability_samples=ind.strategy.generate_samples(params["evolvability_nb_samples"])
