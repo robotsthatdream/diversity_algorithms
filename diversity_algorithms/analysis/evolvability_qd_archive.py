@@ -118,7 +118,7 @@ def generate_evolvability_archive(archive_file, archive_dir, n_to_sample, check_
 
     archive_inds=utils.load_pop_toolbox(archive_file, toolbox) # Should also work OOTB with an archive
     n_archive = len(archive_inds)
-    print("Read an archive of size %d at gen %d and "%(n_archive, gen))
+    print("Read an archive of size %d at gen %d"%(n_archive, gen))
     pop_sample = {}
     if((n_archive <= n_to_sample) or (n_to_sample == -1)):
         print("Asked to sample %d individuals out of %d, will just sample the full archive"%(n_to_sample, n_archive))
