@@ -82,19 +82,16 @@ def novelty_ea(evaluate, params, pool=None):
     """Novelty Search algorithm
  
     Novelty Search algorithm. Parameters:
-    :param population: the population to start from
-    :param toolbox: the DEAP toolbox to use to generate new individuals and evaluate them
-    :param mu: the number of parent individuals to keep from one generation to another
-    :param lambda_: the number of offspring to generate (lambda_ needs to be greater than mu)
-    :param cxpb: the recombination rate
-    :param mutpb: the mutation rate
-    :param ngen: the number of generation to compute
-    :param k: the number of neighbors to take into account while computing novelty
-    :param add_strategy: the archive update strategy (can be "random" or "novel")
-    :param lambdaNov: the number of individuals to add to the archive at a given generation
-    :param stats: the statistic to use (on the population, i.e. survivors from parent+offspring)
-    :param stats_offspring: the statistic to use (on the set of offspring)
-    :param halloffame: the halloffame
+    :param evaluate: the evaluation function
+    :param params: the dict of run parameters
+       * params["pop_size"]: the number of parent individuals to keep from one generation to another
+       * params["lambda"]: the number of offspring to generate, given as a multiplying coefficent on params["pop_size"] (the number of generated individuals is: params["lambda"]*params["pop_size"]
+       * params["nb_gen"]: the number of generations to compute
+       * params["stats"]: the statistics to use (from DEAP framework))
+       * params["stats_offspring"]: the statistics to use (from DEAP framework))
+       * params["variant"]: the different supported variants ("NS", "Fit", "NS+Fit", "NS+BDDistP", "NS+Fit+BDDistP"), add "," at the end of the variant to select in offspring only (as the ES "," variant). By default, selects within the parents and offspring. "NS" uses the novelty criterion, "Fit" the fitness criterion and "BDDistP' the distance to the parent in the behavior space. If a single criterion is used, an elitist selection scheme is used. If more than one criterion is used, NSGA-II is used (see build_toolbox_ns function) 
+       * params["cxpb"]: the crossover rate
+       * params["mutpb"]: the mutation rate
     :param dump_period_bd: the period for dumping behavior descriptors
     :param dump_period_pop: the period for dumping the current population
     :param evolvability_period: period of the evolvability computation
@@ -282,17 +279,4 @@ def novelty_ea(evaluate, params, pool=None):
 if (__name__=='__main__'):
     print("Test of the Novelty-based ES")
 
-    OK=True
-
-    print("Test of the archive")
-
-    lbd=[[i] for i in range(100)]
-    archive=NovArchive(lbd,5)
-    test=[[[50],6./5.], [[0],2.]]
-    for t in test:
-        if(archive.get_nov(t[0])!=t[1]):
-            print("ERROR: Estimated value: %f, ground truth: %f"%(archive.get_nov(t[0]),t[1]))
-            OK=False
-        else:
-            print('.', end='')
-    print("")
+    printf("TODO...")

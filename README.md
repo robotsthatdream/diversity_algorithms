@@ -2,7 +2,7 @@
 
 ## Content
 
-This package contains the code of diversity algorithms, including Novelty Search, ...
+This package contains the code of diversity algorithms, including Novelty Search and QD algorithms.
 
 The name of the different packages are self-explaining. Experiments contains the source files of the experiments, this is propbably the first place to look at if you want to look at how the code is structured and called for an experiment.
 
@@ -30,3 +30,6 @@ If you omit the ``-m scoop`` parameter it will run correctly but without paralle
 
 This will create a directory named after the date and time you have launched that command to store the results of the experiments in the form of bd_XXXX.log files for the behavior descriptors generated at generation XXXX and population files pop_genYYY.npz for generation YYY. bd files are plain text files and pop files are numpy-zipped data files.
 
+## Publications using the library
+
+* Doncieux, S. and Paolo, G. and Laflaquiere, A. and Coninx, A. (2020). Novelty Search makes Evolvability Inevitable. In Genetic and Evolutionary Computation Conference (GECCO ’20), July 8–12, 2020, Cancún, Mexico. ACM, New York, NY, USA, 9 pages. https://doi.org/10.1145/3377930.3389840
