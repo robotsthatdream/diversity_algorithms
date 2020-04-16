@@ -5,7 +5,20 @@
 import sys,getopt
 import numpy as np
 
-import gym, gym_billiard, gym_fastsim
+import gym
+
+try:
+    import gym_billiard
+except ImportError:
+    print("WARNING: gym_billiard not found. Billiard-based environments will not work.")
+
+try:
+    import gym_fastsim
+except ImportError:
+    print("WARNING: gym_fastsim not found. Fastsim-based environments will not work.")
+
+
+
 
 from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
