@@ -69,12 +69,11 @@ def updateNovelty(population, offspring, archive, params, population_saved=None)
    Implementation of novelty search following (Gomes, J., Mariano, P., & Christensen, A. L. (2015, July). Devising effective novelty search algorithms: A comprehensive empirical study. In Proceedings of GECCO 2015 (pp. 943-950). ACM.).
    :param population: is the set of indiv for which novelty needs to be computed
    :param offspring: is the set of new individuals that need to be taken into account to update the archive (may be the same as population, but it may also be different as population may contain the set of parents)
-   :param k: is the number of nearest neighbors taken into account
-   :param add_strategy: is either "random" (a random set of indiv is added to the archive) or "novel" (only the most novel individuals are added to the archive).
-   :param _lambda: is the number of individuals added to the archive for each generation
-   The default values correspond to the one giving the better results in the above mentionned paper.
-
-   The function returns the new archive
+   :param params: dictionary containing run parameters. The relevant parameters are:
+      * params["k"] is the number of nearest neighbors taken into account
+      * params["add_strategy"] is either "random" (a random set of indiv is added to the archive) or "novel" (only the most novel individuals are added to the archive).
+      * params ["lambda_nov"] is the number of individuals added to the archive for each generation
+    :returns: The function returns the new archive
    """
    k=params["k"]
    add_strategy=params["add_strategy"]
