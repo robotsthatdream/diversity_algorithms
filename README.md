@@ -7,12 +7,11 @@ This package contains the code of diversity algorithms, including Novelty Search
 The name of the different packages are self-explaining. Experiments contains the source files of the experiments, this is propbably the first place to look at if you want to look at how the code is structured and called for an experiment.
 
 ## Dependencies
+* gym, numpy, dill, deap
+* scoop (required for parallelism - not strictly necessary to run but highly recommended)
+* For the maze tasks : [fastsim_gym](https://github.com/alexendy/fastsim_gym), which requires [PyFastsim](https://github.com/alexendy/pyfastsim) - which itself requires a patched version of [libfastsim](https://github.com/jbmouret/libfastsim) (patch provided in the PyFastsim repository)
+* For the billiard task : [Gym_billiard](https://github.com/GPaolo/Billiard)
 
-* [PyFastsim](https://github.com/alexendy/pyfastsim) - which itself requires a patched version of [libfastsim](https://github.com/jbmouret/libfastsim) (patch provided in the PyFastsim repository)
-* [fastsim_gym](https://github.com/alexendy/fastsim_gym)
-* [Gym_billiard](https://github.com/GPaolo/Billiard)
-* scoop
-* For dynamic structure networks, [graph_tool](https://graph-tool.skewed.de/) which is unfortunately not available in pip or in Debian/Ubuntu default repositories. There *is* a Debian/Ubuntu package though, but you will have to add a custom repository. See [here](https://git.skewed.de/count0/graph-tool/wikis/installation-instructions#debian-ubuntu) for information.
 
 ## How to use it ?
 
