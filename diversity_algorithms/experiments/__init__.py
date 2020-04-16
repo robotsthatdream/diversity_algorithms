@@ -1,3 +1,3 @@
 # coding: utf-8 
 
-__all__=["maze_ns_exploration"]
+__all__=["gym_novelty", "gym_qd", "exp_utils"]
