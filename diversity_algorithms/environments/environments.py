@@ -117,3 +117,17 @@ registered_environments["DummyMapping3D"] = {
 		"nb_bin": 50
 	}
 }
+
+registered_environments["Billiard"] = {
+	"bd_func": billiard_behavior_descriptor,
+	"eval": gym_env.EvaluationFunctor,
+	"eval_params": {
+		"gym_env_name":"Billiard-v0",
+		"gym_params":{},
+		"output":"final_reward"}, # Default
+	"grid_features": {
+		"min_x": [-1.35,-1.35],
+		"max_x": [1.35, 1.35],
+		"nb_bin": 50
+	}
+}

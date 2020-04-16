@@ -5,7 +5,7 @@
 import sys,getopt
 import numpy as np
 
-import gym, gym_fastsim
+import gym, gym_billiard, gym_fastsim
 
 from diversity_algorithms.controllers import SimpleNeuralController
 from diversity_algorithms.analysis import build_grid
@@ -109,4 +109,5 @@ if(__name__=='__main__'):
 	pop, archive, logbook, nb_eval = novelty_ea(eval_with_functor, sparams, pool)
 
 	terminating_run(sparams, pop, archive, logbook, nb_eval)
+	sys.exit()
 
