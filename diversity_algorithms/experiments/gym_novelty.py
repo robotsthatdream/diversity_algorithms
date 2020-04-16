@@ -79,7 +79,7 @@ params={
 	"k": RunParam("", 15, "Number of neighbors to take into account for novelty computation"),
 	"add_strategy": RunParam("s", "random", "strategy for archive inclusion (random or novel)"),
 	"lambda_nov": RunParam("", 6, "number of indiv added to the archive at each gen"),
-	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
+	"geno_type": RunParam("G", "realarray", "type of genotype (only realarray is currently supported)"),
 	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	"alphas": RunParam("A", 0., "alpha for the computation of alpha shapes, to build explored areas and compute distance to them"),
 	"stop_archive_update": RunParam("S", -1, "generation at which to stop updating the archive, -1 means normal mode, i.e. no stop (control experiment)"),

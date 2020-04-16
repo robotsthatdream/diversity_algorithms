@@ -92,7 +92,7 @@ params={
 	"min": RunParam("", -5., "Min value of the genotype"), # WARNING, some variants do not use it at all. -5 seems reasonable for NN weights
 	"max": RunParam("", 5., "Min value of the genotype"), # WARNING, some variants do not use it at all. 5 seems reasonable for NN weights
 	"k_nov": RunParam("", 15, "Number of neighbors to take into account for novelty computation"),
-	"geno_type": RunParam("G", "realarray", "type of genotype (either realarray or dnn)"),
+	"geno_type": RunParam("G", "realarray", "type of genotype (only realarray is currently supported)"),
 	"eval_budget": RunParam("B", -1, "evaluation budget (ignored if -1). "),
 	}
 

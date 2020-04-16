@@ -7,7 +7,6 @@ import datetime
 import os
 import array
 
-#from diversity_algorithms.controllers import DNN, initDNN, mutDNN, mateDNNDummy
 
 creator = None
 def set_creator(cr):
@@ -73,18 +72,6 @@ def build_toolbox_ns(evaluate,params,pool=None):
     
         # Polynomial mutation with eta=15, and p=0.1 as for Leni
         toolbox.register("mutate", tools.mutPolynomialBounded, eta=params["eta_m"], indpb=params["indpb"], low=params["min"], up=params["max"])
-    
-    elif(params["geno_type"] == "dnn"):
-        print("** Using dymamic structure networks (DNN) **")
-        # With DNN (dynamic structure networks)
-        #---------
-        toolbox.register("individual", initDNN, creator.Individual, in_size=params["geno_n_in"],out_size=params["geno_n_out"])
-
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-        #toolbox.register("mate", mateDNNDummy, alpha=params["alpha"])
-    
-        # Polynomial mutation with eta=15, and p=0.1 as for Leni
-        toolbox.register("mutate", mutDNN, mutation_rate_params_wb=params["dnn_mut_pb_wb"], mutation_eta=params["dnn_mut_eta_wb"], mutation_rate_add_conn=params["dnn_mut_pb_add_conn"], mutation_rate_del_conn=params["dnn_mut_pb_del_conn"], mutation_rate_add_node=params["dnn_mut_pb_add_node"], mutation_rate_del_node=params["dnn_mut_pb_del_node"])
     else:
         raise RuntimeError("Unknown genotype type %s" % geno_type)
 
