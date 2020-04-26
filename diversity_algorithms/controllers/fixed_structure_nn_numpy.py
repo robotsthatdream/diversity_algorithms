@@ -121,7 +121,7 @@ class SimpleNeuralControllerNumpy():
             a = np.matmul(x,self.weights[0]) + self.bias[0]
             y = sigmoid(a)
             # hidden -> hidden
-            for i in range(1,self.n_hidden_layers-1):
+            for i in range(1,self.n_hidden_layers):
                 a = np.matmul(y, self.weights[i]) + self.bias[i]
                 y = sigmoid(a)
             # Out
