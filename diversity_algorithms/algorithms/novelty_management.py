@@ -53,7 +53,7 @@ class NovArchive:
         if (self.kdtree is None):
             darch=[] # archive-less NS (i.e. behavior diversity)
         else:
-            darch,ind=self.kdtree.query(np.array(bd),self.k, n_jobs=-1)
+            darch,ind=self.kdtree.query(np.array(bd),self.k, workers=-1)
         d=dpop+list(darch)
         d.sort()
         #if (d[0]!=0):
