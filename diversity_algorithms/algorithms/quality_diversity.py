@@ -110,7 +110,7 @@ class StructuredGrid:
 		for ind in extra_indivs:
 			dists.append(np.linalg.norm(np.array(bd)-np.array(ind.bd)))
 		# Query KNN in archive
-		dists_archive, _ = self.kdtree.query(np.array(bd),self.k+1, n_jobs=-1)
+		dists_archive, _ = self.kdtree.query(np.array(bd),self.k+1, workers=-1)
 		dists += list(dists_archive)
 		dists.sort()
 		if(in_archive):
@@ -204,7 +204,7 @@ class UnstructuredArchive:
 		for ind in extra_indivs:
 			dists.append(np.linalg.norm(np.array(bd)-np.array(ind.bd)))
 		# Query KNN in archive
-		dists_archive, _ = self.kdtree.query(np.array(bd),self.k+1, n_jobs=-1)
+		dists_archive, _ = self.kdtree.query(np.array(bd),self.k+1, workers=-1)
 		dists += list(dists_archive)
 		dists.sort()
 		if(in_archive):
@@ -223,7 +223,7 @@ class UnstructuredArchive:
 	
 	def try_add(self,indiv):
 		bd = indiv.bd
-		close_neighbors = ([] if((self.kdtree is None) or (self.r == 0)) else self.kdtree.query_ball_point(bd, self.r, n_jobs=-1))
+		close_neighbors = ([] if((self.kdtree is None) or (self.r == 0)) else self.kdtree.query_ball_point(bd, self.r, workers=-1))
 		if not close_neighbors: # No neighbors in ball, no problem - add indiv
 			self.archive.append(indiv)
 			self.post_add_update()
